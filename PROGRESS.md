@@ -5,10 +5,10 @@ Blocked: (write here if something blocks you)
 
 ## Phase 0 — Scaffold
 - [x] 0.1 Repo init
-- [ ] 0.2 package.json & deps
-- [ ] 0.3 TS / electron-vite / Vitest config
-- [ ] 0.4 Hello window
-- [ ] 0.5 Vitest smoke
+- [x] 0.2 package.json & deps
+- [x] 0.3 TS / electron-vite / Vitest config
+- [x] 0.4 Hello window
+- [x] 0.5 Vitest smoke
 ## Phase 1 — Shared core
 - [ ] 1.1 types  - [ ] 1.2 formats  - [ ] 1.3 tools/toolOptions  - [ ] 1.4 geometry  - [ ] 1.5 naming
 - [ ] 1.6 time/pageRanges  - [ ] 1.7 subtitles  - [ ] 1.8 text  - [ ] 1.9 wheelItems  - [ ] 1.10 overlay/ipc
@@ -49,3 +49,4 @@ Blocked: (write here if something blocks you)
 
 ## Notes & deviations
 - (date) Task X.Y — note
+- 2026-10-06 Tasks 0.2,0.3,0.4,0.5 — Deviations: electron-vite 5 needs vite<=7, so installed vite@7, @vitejs/plugin-react@5 (v6 needs vite 8), @types/node@22. typescript resolved to 7.x which removed baseUrl: tsconfig paths now use './src/...' without baseUrl. Preload builds as .js (not .mjs). Built app launches (smoke-tested).
