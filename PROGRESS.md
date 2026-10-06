@@ -10,8 +10,8 @@ Blocked: (write here if something blocks you)
 - [x] 0.4 Hello window
 - [x] 0.5 Vitest smoke
 ## Phase 1 — Shared core
-- [ ] 1.1 types  - [ ] 1.2 formats  - [ ] 1.3 tools/toolOptions  - [ ] 1.4 geometry  - [ ] 1.5 naming
-- [ ] 1.6 time/pageRanges  - [ ] 1.7 subtitles  - [ ] 1.8 text  - [ ] 1.9 wheelItems  - [ ] 1.10 overlay/ipc
+- [x] 1.1 types  - [x] 1.2 formats  - [x] 1.3 tools/toolOptions  - [x] 1.4 geometry  - [x] 1.5 naming
+- [x] 1.6 time/pageRanges  - [x] 1.7 subtitles  - [x] 1.8 text  - [x] 1.9 wheelItems  - [x] 1.10 overlay/ipc
 ## Phase 2 — Binaries
 - [ ] 2.1 fetch-binaries  - [ ] 2.2 pdf.js assets  - [ ] 2.3 heif-enc (optional): enabled? yes/no  - [ ] 2.4 paths/log/errors/process/capabilities
 ## Phase 3 — Main foundation
@@ -50,3 +50,4 @@ Blocked: (write here if something blocks you)
 ## Notes & deviations
 - (date) Task X.Y — note
 - 2026-10-06 Tasks 0.2,0.3,0.4,0.5 — Deviations: electron-vite 5 needs vite<=7, so installed vite@7, @vitejs/plugin-react@5 (v6 needs vite 8), @types/node@22. typescript resolved to 7.x which removed baseUrl: tsconfig paths now use './src/...' without baseUrl. Preload builds as .js (not .mjs). Built app launches (smoke-tested).
+- 2026-10-06 Tasks 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 — Deviation: geometry.dragRect now rescales an aspect-locked rect to fit the frame (the plan's version clamped one side and broke the lock; the plan's own test case needs this). Added src/shared/testCaps.ts (makeCaps test helper). Test files are excluded from tsconfig.web and type-checked by tsconfig.node instead.

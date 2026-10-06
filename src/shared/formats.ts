@@ -1,0 +1,147 @@
+import type { Capabilities, Category, Fmt } from './types';
+
+export interface FormatInfo {
+  fmt: Fmt;
+  label: string;
+  category: Category;
+  exts: string[];          // first = canonical output extension
+  mimes: string[];
+  input: boolean;          // false = output-only (DOCX)
+}
+
+export const FORMATS: Record<Fmt, FormatInfo> = {
+  jpg: { fmt: 'jpg', label: 'JPG', category: 'image', exts: ['jpg', 'jpeg', 'jfif'], mimes: ['image/jpeg'], input: true },
+  png: { fmt: 'png', label: 'PNG', category: 'image', exts: ['png'], mimes: ['image/png'], input: true },
+  webp: { fmt: 'webp', label: 'WebP', category: 'image', exts: ['webp'], mimes: ['image/webp'], input: true },
+  heic: { fmt: 'heic', label: 'HEIC', category: 'image', exts: ['heic', 'heif'], mimes: ['image/heic', 'image/heif'], input: true },
+  tiff: { fmt: 'tiff', label: 'TIFF', category: 'image', exts: ['tiff', 'tif'], mimes: ['image/tiff'], input: true },
+  svg: { fmt: 'svg', label: 'SVG', category: 'image', exts: ['svg'], mimes: ['image/svg+xml'], input: true },
+  avif: { fmt: 'avif', label: 'AVIF', category: 'image', exts: ['avif'], mimes: ['image/avif'], input: true },
+  bmp: { fmt: 'bmp', label: 'BMP', category: 'image', exts: ['bmp'], mimes: ['image/bmp', 'image/x-ms-bmp'], input: true },
+  mp3: { fmt: 'mp3', label: 'MP3', category: 'audio', exts: ['mp3'], mimes: ['audio/mpeg', 'audio/mp3'], input: true },
+  m4a: { fmt: 'm4a', label: 'M4A', category: 'audio', exts: ['m4a', 'aac'], mimes: ['audio/mp4', 'audio/x-m4a', 'audio/aac'], input: true },
+  wav: { fmt: 'wav', label: 'WAV', category: 'audio', exts: ['wav'], mimes: ['audio/wav', 'audio/x-wav', 'audio/wave'], input: true },
+  flac: { fmt: 'flac', label: 'FLAC', category: 'audio', exts: ['flac'], mimes: ['audio/flac', 'audio/x-flac'], input: true },
+  ogg: { fmt: 'ogg', label: 'OGG', category: 'audio', exts: ['ogg', 'oga'], mimes: ['audio/ogg'], input: true },
+  opus: { fmt: 'opus', label: 'Opus', category: 'audio', exts: ['opus'], mimes: ['audio/opus'], input: true },
+  aiff: { fmt: 'aiff', label: 'AIFF', category: 'audio', exts: ['aiff', 'aif'], mimes: ['audio/aiff', 'audio/x-aiff'], input: true },
+  wma: { fmt: 'wma', label: 'WMA', category: 'audio', exts: ['wma'], mimes: ['audio/x-ms-wma'], input: true },
+  mp4: { fmt: 'mp4', label: 'MP4', category: 'video', exts: ['mp4', 'm4v'], mimes: ['video/mp4', 'video/x-m4v'], input: true },
+  mov: { fmt: 'mov', label: 'MOV', category: 'video', exts: ['mov'], mimes: ['video/quicktime'], input: true },
+  mkv: { fmt: 'mkv', label: 'MKV', category: 'video', exts: ['mkv'], mimes: ['video/x-matroska', 'video/matroska'], input: true },
+  webm: { fmt: 'webm', label: 'WebM', category: 'video', exts: ['webm'], mimes: ['video/webm'], input: true },
+  avi: { fmt: 'avi', label: 'AVI', category: 'video', exts: ['avi'], mimes: ['video/x-msvideo', 'video/avi', 'video/msvideo'], input: true },
+  wmv: { fmt: 'wmv', label: 'WMV', category: 'video', exts: ['wmv'], mimes: ['video/x-ms-wmv'], input: true },
+  gif: { fmt: 'gif', label: 'GIF', category: 'video', exts: ['gif'], mimes: ['image/gif'], input: true },
+  pdf: { fmt: 'pdf', label: 'PDF', category: 'pdf', exts: ['pdf'], mimes: ['application/pdf'], input: true },
+  docx: {
+    fmt: 'docx', label: 'DOCX', category: 'pdf', exts: ['docx'],
+    mimes: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'], input: false
+  },
+  epub: { fmt: 'epub', label: 'EPUB', category: 'epub', exts: ['epub'], mimes: ['application/epub+zip'], input: true },
+  txt: { fmt: 'txt', label: 'TXT', category: 'text', exts: ['txt', 'text', 'md', 'markdown', 'log', 'csv'], mimes: ['text/plain', 'text/markdown', 'text/csv'], input: true },
+  srt: { fmt: 'srt', label: 'SRT', category: 'subtitle', exts: ['srt'], mimes: ['application/x-subrip', 'text/srt'], input: true },
+  vtt: { fmt: 'vtt', label: 'VTT', category: 'subtitle', exts: ['vtt'], mimes: ['text/vtt'], input: true }
+};
+
+const EXT_INDEX = new Map<string, Fmt>();
+const MIME_INDEX = new Map<string, Fmt>();
+for (const info of Object.values(FORMATS)) {
+  if (!info.input) continue;
+  for (const e of info.exts) EXT_INDEX.set(e, info.fmt);
+  for (const m of info.mimes) MIME_INDEX.set(m, info.fmt);
+}
+
+/** "C:\\a\\b.JPEG" → "jpeg" (lower-case, no dot). Works with / and \. */
+export function extOf(filePath: string): string {
+  const name = filePath.split(/[\\/]/).pop() ?? '';
+  const dot = name.lastIndexOf('.');
+  return dot <= 0 ? '' : name.slice(dot + 1).toLowerCase();
+}
+
+export function fmtFromExt(ext: string): Fmt | null {
+  return EXT_INDEX.get(ext.toLowerCase()) ?? null;
+}
+
+export function fmtFromPath(filePath: string): Fmt | null {
+  return fmtFromExt(extOf(filePath));
+}
+
+export function fmtFromMime(mime: string): Fmt | null {
+  return MIME_INDEX.get(mime.toLowerCase()) ?? null;
+}
+
+export function categoryOf(fmt: Fmt): Category {
+  return FORMATS[fmt].category;
+}
+
+/** Canonical extension to write for a format, e.g. jpg → "jpg", tiff → "tiff". */
+export function outputExt(fmt: Fmt): string {
+  return FORMATS[fmt].exts[0];
+}
+
+export const CATEGORY_ORDER: Category[] = ['image', 'audio', 'video', 'pdf', 'epub', 'text', 'subtitle'];
+
+export const CATEGORY_LABEL: Record<Category, string> = {
+  image: 'Images', audio: 'Audio', video: 'Video', pdf: 'PDF', epub: 'EPUB', text: 'Text', subtitle: 'Subtitles'
+};
+
+export const CATEGORY_NOTE: Record<Category, string> = {
+  image: 'PDF & DOCX export',
+  audio: '',
+  video: 'MP3 audio export',
+  pdf: 'All pages · images at 300 DPI',
+  epub: 'Adjustable text or preserved pages',
+  text: 'UTF-8 text',
+  subtitle: ''
+};
+
+/** What each input category can become (wheel order, clockwise from 12 o'clock). */
+export const CONVERT_TARGETS: Record<Category, Fmt[]> = {
+  image: ['jpg', 'png', 'webp', 'heic', 'tiff', 'svg', 'avif', 'bmp', 'pdf', 'docx'],
+  audio: ['mp3', 'm4a', 'wav', 'flac', 'ogg', 'opus', 'aiff', 'wma'],
+  video: ['mp4', 'mov', 'mkv', 'webm', 'avi', 'wmv', 'gif', 'mp3'],
+  pdf: ['docx', 'jpg', 'png', 'epub', 'txt'],
+  epub: ['pdf'],
+  text: ['pdf', 'jpg', 'png', 'srt', 'vtt'],
+  subtitle: ['srt', 'vtt', 'txt']
+};
+
+/** FFmpeg encoders required to produce each target from audio/video sources (and BMP from images). */
+export const REQUIRED_ENCODERS: Partial<Record<Fmt, string[]>> = {
+  mp4: ['libx264', 'aac'],
+  mov: ['libx264', 'aac'],
+  mkv: ['libx264', 'aac'],
+  webm: ['libvpx-vp9', 'libopus'],
+  avi: ['mpeg4', 'libmp3lame'],
+  wmv: ['wmv2', 'wmav2'],
+  gif: ['gif'],
+  mp3: ['libmp3lame'],
+  m4a: ['aac'],
+  wav: ['pcm_s16le'],
+  flac: ['flac'],
+  ogg: ['libvorbis'],
+  opus: ['libopus'],
+  aiff: ['pcm_s16be'],
+  wma: ['wmav2'],
+  bmp: ['bmp']
+};
+
+/** Conversions that show a Step-2 options card by default. */
+const OPTION_PAIRS: Array<[Category, Fmt]> = [
+  ['image', 'svg'], ['video', 'gif'], ['pdf', 'docx'], ['pdf', 'epub'], ['epub', 'pdf'],
+  ['text', 'pdf'], ['text', 'jpg'], ['text', 'png'], ['text', 'srt'], ['text', 'vtt']
+];
+
+export function needsOptions(from: Category, to: Fmt): boolean {
+  return OPTION_PAIRS.some(([c, f]) => c === from && f === to);
+}
+
+/** True when the engine that produces `target` from `from` is available. */
+export function targetAvailable(target: Fmt, from: Category, caps: Capabilities): boolean {
+  if (from === 'image' && target === 'heic') return caps.heifEnc;
+  const usesFfmpeg = from === 'audio' || from === 'video' || (from === 'image' && target === 'bmp');
+  if (!usesFfmpeg) return true;
+  if (!caps.ffmpeg) return false;
+  return (REQUIRED_ENCODERS[target] ?? []).every((e) => caps.encoders.includes(e));
+}
