@@ -147,6 +147,7 @@ export function SettingsView() {
         <div className="ro-row"><span>FFmpeg</span><span title={caps.ffmpegVersion}>{caps.ffmpeg ? caps.ffmpegVersion.replace(/^ffmpeg version\s+/, '').split(' ')[0] : 'not found'}</span></div>
         <div className="ro-row"><span>HEIC output</span><span>{heicText(caps)}</span></div>
         <div className="ro-row"><span>OCR languages</span><span>{caps.ocrLanguages.map((l) => LANG_LABEL[l] ?? l).join(', ') || 'none'}</span></div>
+        <Row label="Open-source licences"><Button variant="soft" onClick={() => void api.openNotices()}>Third-party notices</Button></Row>
         <p className="card-note">All processing happens on this computer. Nothing is uploaded.</p>
       </Group>
     </div>

@@ -16,6 +16,7 @@ export const IPC = {
   listJobs: 'job:list',
   reveal: 'shell:reveal',
   openPath: 'shell:open',
+  openNotices: 'shell:open-notices',
   openOverlay: 'overlay:open',
   closeOverlay: 'overlay:close',
   resizeOverlay: 'overlay:resize',
@@ -50,6 +51,7 @@ export interface KabooksApi {
   listJobs(): Promise<JobUpdate[]>;
   reveal(path: string): Promise<void>;
   openPath(path: string): Promise<void>;
+  openNotices(): Promise<void>;
   openOverlay(paths: string[], mode: WheelMode): Promise<void>;
   closeOverlay(): Promise<void>;
   resizeOverlay(size: OverlaySize): Promise<void>;

@@ -20,6 +20,7 @@ const api: KabooksApi = {
   listJobs: () => ipcRenderer.invoke(IPC.listJobs),
   reveal: (p) => ipcRenderer.invoke(IPC.reveal, p),
   openPath: (p) => ipcRenderer.invoke(IPC.openPath, p),
+  openNotices: () => ipcRenderer.invoke(IPC.openNotices),
   openOverlay: (paths, mode) => ipcRenderer.invoke(IPC.openOverlay, paths, mode),
   closeOverlay: () => ipcRenderer.invoke(IPC.closeOverlay),
   resizeOverlay: (size) => ipcRenderer.invoke(IPC.resizeOverlay, size),

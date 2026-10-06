@@ -4,6 +4,7 @@ import { IPC } from '@shared/ipc';
 import type { OverlaySize } from '@shared/overlay';
 import type { JobRequest, Settings, WheelMode } from '@shared/types';
 import { getCapabilities } from './capabilities';
+import { noticesPath } from './paths';
 import { pdfThumbs, withPdf } from './engines/pdfEngine';
 import { inspectFiles } from './inspect';
 import { registerImagePreviewIpc } from './imagePreview';
@@ -58,6 +59,10 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.reveal, (_e, p: unknown) => shell.showItemInFolder(existingPath(p)));
   ipcMain.handle(IPC.openPath, async (_e, p: unknown) => {
     const err = await shell.openPath(existingPath(p));
+    if (err) throw new Error(err);
+  });
+  ipcMain.handle(IPC.openNotices, async () => {
+    const err = await shell.openPath(noticesPath());
     if (err) throw new Error(err);
   });
   ipcMain.handle(IPC.openOverlay, (_e, paths: unknown, mode: WheelMode) => openOverlay(strings(paths, 'paths'), mode === 'tools' ? 'tools' : 'convert', 'window'));

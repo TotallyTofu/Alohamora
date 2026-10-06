@@ -27,6 +27,10 @@ export const tessdataDir = (): string => path.join(resourcesRoot(), 'tessdata');
 /** macOS uses a black "template" image so the menu bar can tint it; Windows/Linux use the coloured icon. */
 export const trayIconPath = (): string => path.join(resourcesRoot(), isMac ? 'trayTemplate.png' : 'tray.png');
 
+/** THIRD_PARTY_NOTICES.md: shipped in the app resources (the project root when running from source). */
+export const noticesPath = (): string =>
+  app.isPackaged ? path.join(process.resourcesPath, 'THIRD_PARTY_NOTICES.md') : path.join(app.getAppPath(), 'THIRD_PARTY_NOTICES.md');
+
 /** Find an executable on PATH (Linux/macOS), or null. */
 export function findOnPath(name: string): string | null {
   for (const dir of (process.env.PATH ?? '').split(path.delimiter)) {

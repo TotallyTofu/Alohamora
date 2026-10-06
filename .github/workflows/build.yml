@@ -1,0 +1,52 @@
+name: build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, dist: 'dist:win' }
+          - { os: macos-15, dist: 'dist:mac' }          # Apple Silicon (arm64)
+          - { os: macos-15-intel, dist: 'dist:mac' }    # Intel (x64); GitHub supports this label until Aug 2027
+          - { os: ubuntu-22.04, dist: 'dist:linux' }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb libgtk-3-0 libnss3 libxss1 libxtst6 libnotify4 libgbm1 libheif-examples
+      - run: npm ci
+      - run: npm run fetch-binaries        # also builds the macOS drag helper on macOS runners
+      - run: npm run check-binaries
+      - run: npm run typecheck
+      - run: npm test
+      - name: Self-test
+        if: runner.os != 'Linux'
+        run: npm run selftest
+      - name: Self-test (Linux, headless)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run selftest -- --no-sandbox
+      - name: Package
+        run: npm run ${{ matrix.dist }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false     # unsigned CI builds; see Task 13.6 for signing
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kabooks-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.AppImage
+            dist/*.deb
+            .selftest/report.json
+          if-no-files-found: ignore
