@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  blocksToText, isScanned, reflowPages, runsText, textToBlocks, type Block, type TextItem, type TextPage
+  blocksToText, blocksToXhtml, isScanned, reflowPages, runsText, splitChapters, textToBlocks,
+  type Block, type TextItem, type TextPage
 } from './pdfReflow';
 
 /** A text item whose width is roughly 0.5 em per character. */
@@ -77,5 +78,39 @@ describe('isScanned / textToBlocks / blocksToText', () => {
       { type: 'li', runs: [{ text: 'one', bold: false, italic: false }] }
     ]);
     expect(text).toBe('Title\n\n• one\n');
+  });
+});
+
+describe('blocksToXhtml / splitChapters', () => {
+  const run = (text: string, bold = false) => ({ text, bold, italic: false });
+
+  it('wraps consecutive list items in one <ul> and escapes markup', () => {
+    const xhtml = blocksToXhtml([
+      { type: 'p', runs: [run('a < b & c')] },
+      { type: 'li', runs: [run('one')] },
+      { type: 'li', runs: [run('two', true)] },
+      { type: 'p', runs: [run('after')] }
+    ]);
+    expect(xhtml.match(/<ul>/g)).toHaveLength(1);
+    expect(xhtml).toContain('a &lt; b &amp; c');
+    expect(xhtml).toContain('<li><strong>two</strong></li>');
+    expect(xhtml.indexOf('</ul>')).toBeLessThan(xhtml.indexOf('after'));
+  });
+
+  it('starts a new chapter at every h1', () => {
+    const chapters = splitChapters([
+      { type: 'h1', runs: [run('One')] }, { type: 'p', runs: [run('x')] },
+      { type: 'h1', runs: [run('Two')] }, { type: 'p', runs: [run('y')] }
+    ], 'Book');
+    expect(chapters.map((c) => c.title)).toEqual(['One', 'Two']);
+    expect(chapters[0].blocks).toHaveLength(2);
+  });
+
+  it('uses the fallback title when the text starts without a heading, and cuts very long chapters', () => {
+    const many: Block[] = Array.from({ length: 650 }, () => ({ type: 'p', runs: [run('x')] }));
+    const chapters = splitChapters(many, 'Book');
+    expect(chapters[0].title).toBe('Book');
+    expect(chapters).toHaveLength(3);
+    expect(chapters[1].title).toBe('Book (cont.)');
   });
 });

@@ -1,8 +1,12 @@
 import fs from 'node:fs';
-import { blocksToText, isScanned, reflowPages, type Block } from '@shared/pdfReflow';
+import { blocksToText, blocksToXhtml, isScanned, reflowPages, splitChapters, type Block } from '@shared/pdfReflow';
+import { guessLang } from '@shared/text';
 import type { ConvertOptions } from '@shared/toolOptions';
 import type { FileInfo, Fmt } from '@shared/types';
 import { throwIfAborted, UserError } from '../errors';
+import { blocksToDocx, pageImagesToDocx } from '../engines/docxWriter';
+import { buildFixedEpub, buildReflowEpub } from '../engines/epubWriter';
+import { ocrPdfToBlocks } from '../engines/ocr';
 import { pdfExtractText, pdfRenderPage, withPdf } from '../engines/pdfEngine';
 import type { JobContext } from '../jobs/context';
 
@@ -28,7 +32,7 @@ async function pdfToBlocks(file: FileInfo, opts: ConvertOptions, ctx: JobContext
   const pages = await withPdf(file.path, (doc) => pdfExtractText(doc.id));
   if (isScanned(pages)) {
     if (opts.ocr === 'off') throw new UserError('This PDF has no text layer (it looks scanned). Turn on OCR to extract the text.');
-    throw new UserError('OCR is not available yet.');       // replaced by ocrPdfToBlocks in Task 6.12
+    return ocrPdfToBlocks(file.path, ctx);
   }
   return reflowPages(pages);
 }
@@ -41,6 +45,47 @@ export async function convertPdf(file: FileInfo, target: Fmt, opts: ConvertOptio
     case 'txt': {
       const blocks = await pdfToBlocks(file, opts, ctx);
       await fs.promises.writeFile(ctx.newOutput({ source: file.path, ext: 'txt' }), blocksToText(blocks), 'utf8');
+      return;
+    }
+    case 'docx': {
+      const out = ctx.newOutput({ source: file.path, ext: 'docx' });
+      if ((opts.docMode ?? 'reflow') === 'pages') {
+        const pages = await withPdf(file.path, async (doc) => {
+          const list: Array<{ jpeg: Buffer; widthPt: number; heightPt: number }> = [];
+          for (let i = 0; i < doc.pages; i++) {
+            throwIfAborted(ctx.signal);
+            list.push({ jpeg: await pdfRenderPage(doc.id, i, { dpi: 200, mime: 'image/jpeg', quality: 0.85 }), widthPt: doc.sizes[i].width, heightPt: doc.sizes[i].height });
+            ctx.progress((i + 1) / doc.pages);
+          }
+          return list;
+        });
+        await fs.promises.writeFile(out, await pageImagesToDocx(pages));
+      } else {
+        await fs.promises.writeFile(out, await blocksToDocx(await pdfToBlocks(file, opts, ctx), file.base));
+      }
+      return;
+    }
+    case 'epub': {
+      const out = ctx.newOutput({ source: file.path, ext: 'epub' });
+      const meta = { title: file.base, lang: 'en' };
+      if ((opts.docMode ?? 'reflow') === 'pages') {
+        const pages = await withPdf(file.path, async (doc) => {
+          const list: Array<{ jpeg: Buffer; width: number; height: number }> = [];
+          for (let i = 0; i < doc.pages; i++) {
+            throwIfAborted(ctx.signal);
+            const jpeg = await pdfRenderPage(doc.id, i, { dpi: 150, mime: 'image/jpeg', quality: 0.85 });
+            list.push({ jpeg, width: Math.round((doc.sizes[i].width * 150) / 72), height: Math.round((doc.sizes[i].height * 150) / 72) });
+            ctx.progress((i + 1) / doc.pages);
+          }
+          return list;
+        });
+        await fs.promises.writeFile(out, await buildFixedEpub(meta, pages));
+      } else {
+        const blocks = await pdfToBlocks(file, opts, ctx);
+        meta.lang = guessLang(blocksToText(blocks));
+        const chapters = splitChapters(blocks, file.base).map((c) => ({ title: c.title, bodyXhtml: blocksToXhtml(c.blocks) }));
+        await fs.promises.writeFile(out, await buildReflowEpub(meta, chapters));
+      }
       return;
     }
     default:

@@ -1,3 +1,5 @@
+import { escapeXml } from './text';
+
 export interface TextItem { str: string; x: number; y: number; w: number; h: number; fontSize: number; bold: boolean; italic: boolean }
 export interface TextPage { width: number; height: number; items: TextItem[] }
 export interface Run { text: string; bold: boolean; italic: boolean }
@@ -175,4 +177,36 @@ export function blocksToText(blocks: Block[]): string {
 export function textToBlocks(text: string): Block[] {
   return text.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean)
     .map((t) => ({ type: 'p' as const, runs: [{ text: t, bold: false, italic: false }] }));
+}
+
+export function blocksToXhtml(blocks: Block[]): string {
+  const out: string[] = [];
+  let inList = false;
+  for (const b of blocks) {
+    if (b.type === 'pagebreak') continue;
+    if (b.type === 'li' && !inList) { out.push('<ul>'); inList = true; }
+    if (b.type !== 'li' && inList) { out.push('</ul>'); inList = false; }
+    const inner = b.runs.map((r) => {
+      let t = escapeXml(r.text);
+      if (r.italic) t = `<em>${t}</em>`;
+      if (r.bold) t = `<strong>${t}</strong>`;
+      return t;
+    }).join('');
+    out.push(`<${b.type}>${inner}</${b.type}>`);
+  }
+  if (inList) out.push('</ul>');
+  return out.join('\n');
+}
+
+/** New chapter at every h1; very long chapters are cut every 300 blocks. */
+export function splitChapters(blocks: Block[], fallbackTitle: string): Array<{ title: string; blocks: Block[] }> {
+  const chapters: Array<{ title: string; blocks: Block[] }> = [];
+  for (const b of blocks) {
+    const cur = chapters[chapters.length - 1];
+    if (!cur || b.type === 'h1' || cur.blocks.length >= 300) {
+      chapters.push({ title: b.type === 'h1' ? runsText(b.runs) : cur ? `${cur.title} (cont.)` : fallbackTitle, blocks: [] });
+    }
+    chapters[chapters.length - 1].blocks.push(b);
+  }
+  return chapters;
 }

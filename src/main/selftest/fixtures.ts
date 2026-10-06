@@ -2,8 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import sharp from 'sharp';
+import { textToHtml } from '@shared/text';
 import { runFfmpeg } from '../engines/ffmpeg';
+import { buildFixedEpub, buildReflowEpub } from '../engines/epubWriter';
 import { encodeHeicFile } from '../engines/heif';
+import { htmlFileToPdf } from '../engines/print';
+import { pdfRenderPage, withPdf } from '../engines/pdfEngine';
 
 type Maker = (out: string, dir: string) => Promise<void>;
 
@@ -69,6 +73,29 @@ export const FIXTURES: Record<string, Maker> = {
       if (p === 3) ['• First item', '• Second item'].forEach((t, i) => page.drawText(t, { x: 72, y: 520 - i * 18, size: 12, font: reg }));
       page.drawText(String(p), { x: 300, y: 30, size: 10, font: reg });
     }
+    await fs.promises.writeFile(out, await pdf.save());
+  },
+  'book.epub': async (out) => {
+    await fs.promises.writeFile(out, await buildReflowEpub({ title: 'Test Book', lang: 'en' }, [
+      { title: 'Chapter One', bodyXhtml: '<h1>Chapter One</h1><p>Kabooks converts files offline. Xin chào thế giới.</p>' },
+      { title: 'Chapter Two', bodyXhtml: '<h1>Chapter Two</h1><p>Second chapter text.</p><ul><li>One</li><li>Two</li></ul>' }
+    ]));
+  },
+  'fixed.epub': async (out, dir) => {
+    const jpeg = await sharp(await ensureFixture(dir, 'image.png')).flatten({ background: '#fff' }).jpeg().toBuffer();
+    await fs.promises.writeFile(out, await buildFixedEpub({ title: 'Fixed', lang: 'en' }, [
+      { jpeg, width: 800, height: 600 }, { jpeg, width: 800, height: 600 }
+    ]));
+  },
+  'scan.pdf': async (out, dir) => {
+    const html = path.join(dir, 'tmp-scan.html');
+    await fs.promises.writeFile(html, textToHtml('KABOOKS OCR TEST\n\nHello offline world.', { title: 'scan', font: 'sans', sizePt: 28, pageSize: 'a4' }), 'utf8');
+    const textPdf = path.join(dir, 'tmp-scan-src.pdf');
+    await fs.promises.writeFile(textPdf, await htmlFileToPdf(html));
+    const png = await withPdf(textPdf, (doc) => pdfRenderPage(doc.id, 0, { dpi: 200, mime: 'image/png' }));
+    const pdf = await PDFDocument.create();
+    const img = await pdf.embedPng(png);
+    pdf.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 });
     await fs.promises.writeFile(out, await pdf.save());
   }
 };

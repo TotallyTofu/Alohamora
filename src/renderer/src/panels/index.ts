@@ -2,6 +2,8 @@ import type { ComponentType } from 'react';
 import type { ConvertOptions } from '@shared/toolOptions';
 import type { Category, FileInfo, Fmt, ToolId } from '@shared/types';
 import { CueTimingCard } from './convert/CueTimingCard';
+import { DocModeCard } from './convert/DocModeCard';
+import { EpubToPdfCard } from './convert/EpubToPdfCard';
 import { GenericCard } from './convert/GenericCard';
 import { GifCard } from './convert/GifCard';
 import { SvgCard } from './convert/SvgCard';
@@ -42,3 +44,6 @@ CONVERT_CARDS['text->vtt'] = { component: CueTimingCard, width: 420, height: 420
 CONVERT_CARDS['text->pdf'] = { component: TextRenderCard, width: 420, height: 500 };
 CONVERT_CARDS['text->jpg'] = { component: TextRenderCard, width: 420, height: 500 };
 CONVERT_CARDS['text->png'] = { component: TextRenderCard, width: 420, height: 500 };
+CONVERT_CARDS['pdf->docx'] = { component: DocModeCard, width: 440, height: 460 };
+CONVERT_CARDS['pdf->epub'] = { component: DocModeCard, width: 440, height: 460 };
+CONVERT_CARDS['epub->pdf'] = { component: EpubToPdfCard, width: 440, height: 520 };

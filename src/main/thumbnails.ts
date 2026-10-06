@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import sharp from 'sharp';
 import type { FileInfo } from '@shared/types';
 import { runFfmpegToBuffer } from './engines/ffmpeg';
+import { readEpubCover } from './engines/epubReader';
 import { loadImage } from './engines/image';
 
 const cache = new Map<string, string>();
@@ -25,6 +26,11 @@ async function build(f: FileInfo): Promise<string | undefined> {
     case 'audio': {
       if (!f.hasCover) return undefined;
       return toDataUrl(await runFfmpegToBuffer(['-i', f.path, '-map', '0:v:0', '-frames:v', '1', '-vf', SCALE, '-f', 'image2pipe', '-c:v', 'mjpeg', 'pipe:1']));
+    }
+    case 'epub': {
+      const cover = await readEpubCover(f.path);
+      if (!cover) return undefined;
+      return toDataUrl(await sharp(cover).resize(256, 256, { fit: 'inside' }).jpeg({ quality: 70 }).toBuffer());
     }
     default:
       return undefined;
