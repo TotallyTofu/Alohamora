@@ -20,8 +20,8 @@ Blocked: (write here if something blocks you)
 ## Phase 4 — AV + self-test
 - [x] 4.1 ffmpegArgs  - [x] 4.2 av converter  - [x] 4.3 selftest harness (av: 18 passed / 0 failed)
 ## Phase 5 — UI & wheel (M1)
-- [ ] 5.1 tokens  - [ ] 5.2 components  - [ ] 5.3 geometry  - [ ] 5.4 Wheel  - [ ] 5.5 overlay
-- [ ] 5.6 stages  - [ ] 5.7 main window  - [ ] 5.8 options/panels  - [ ] 5.9 M1 acceptance
+- [x] 5.1 tokens  - [x] 5.2 components  - [x] 5.3 geometry  - [x] 5.4 Wheel  - [x] 5.5 overlay
+- [x] 5.6 stages  - [x] 5.7 main window  - [x] 5.8 options/panels  - [x] 5.9 M1 acceptance
 ## Phase 6 — Conversions (M2)
 - [ ] 6.1 images raster  - [ ] 6.2 SVG  - [ ] 6.3 HEIC out  - [ ] 6.4 img→PDF/DOCX  - [ ] 6.5 subtitles/TXT→cues
 - [ ] 6.6 print/engine/TXT→PDF  - [ ] 6.7 PDF→images  - [ ] 6.8 reflow/TXT  - [ ] 6.9 PDF→DOCX  - [ ] 6.10 PDF→EPUB
@@ -54,3 +54,4 @@ Blocked: (write here if something blocks you)
 - 2026-10-06 Tasks 2.1,2.2,2.3,2.4 — FFmpeg 9.0.2 (gyan essentials) + eng/vie tessdata fetched; 221 encoders detected. HEIC output NOT enabled on Windows (optional heif-enc.exe not installed; slice stays hidden). check-binaries threshold for tessdata relaxed to 100 KB (vie is ~530 KB).
 - 2026-10-06 Tasks 3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,3.10 — Deviation: with electron-vite 5, shared code imported by both preload entries was split into out/preload/chunks and sandboxed preloads cannot require() it (window.kabooks was undefined). Fixed with preload build.isolatedEntries=true plus a non-TTY guard in electron.vite.config.ts (electron-vite's reporter crashes when stdout is piped); removed deprecated externalizeDepsPlugin. Foundation check verified on Windows via DevTools Protocol: caps (221 encoders), inspect (audio wav 3s), job queue error message, overlay open/close.
 - 2026-10-06 Tasks 4.1,4.2,4.3 — selftest av: 18 passed / 0 failed / 0 skipped on win32-x64 (FFmpeg 9.0.2).
+- 2026-10-06 Tasks 5.1,5.2,5.3,5.4,5.5,5.6,5.7,5.8,5.9 — M1 verified on Windows by driving the real app over DevTools Protocol + screenshots: wheel (7 audio slices, hover orange), run -> Done 'Saved tone.m4a / Show in Explorer', GIF card via right-click -> clip.gif, Tab -> Tools ring, arrows, number keys, Esc, dark theme, av selftest 18/18. NOT verifiable here: real Alt+drop from Explorer onto the window, macOS/Linux label variants. Added hand-written HomeView/ActivityList/views.css/GifCard/GenericCard/Formats+Settings placeholders (plan only specs them). ComingSoon.tsx skipped (PanelStage handles it inline).
