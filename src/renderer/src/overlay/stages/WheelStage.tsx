@@ -1,20 +1,37 @@
 import { useEffect, useMemo } from 'react';
-import { buildWheel } from '@shared/wheelItems';
+import { categoryOf } from '@shared/formats';
+import type { FileInfo } from '@shared/types';
+import { buildWheel, type WheelItem, type WheelModel } from '@shared/wheelItems';
 import { CATEGORY_ICON } from '../../components/Icon';
 import { Wheel } from '../../components/Wheel/Wheel';
 import { api } from '../../lib/api';
+import { fmtsFromDragTypes, pathsFromDataTransfer } from '../../lib/dnd';
 import { useOverlay } from '../store';
 
-export function WheelStage() {
-  const { files, mode, caps, active, setActive, setMode, go } = useOverlay();
-  const model = useMemo(() => (caps ? buildWheel(files, mode, caps) : { items: [], category: null, mixed: false }), [files, mode, caps]);
+const EMPTY: WheelModel = { items: [], category: null, mixed: false };
 
-  const pick = async (i: number, withOptions: boolean): Promise<void> => {
-    const item = model.items[i];
-    if (!item) return;
+export function WheelStage() {
+  const { files, mode, caps, active, dragging, dragFmts, setActive, setMode, go, setDragFmts, dropFinished } = useOverlay();
+
+  const model = useMemo<WheelModel>(() => {
+    if (!caps) return EMPTY;
+    if (dragging && files.length === 0) {
+      // Global drag on Windows/Linux: only MIME types are readable before the drop.
+      if (dragFmts.length === 0 || dragFmts.some((f) => f === null)) return { ...EMPTY, emptyReason: 'Drop to choose' };
+      const pseudo: FileInfo[] = dragFmts.map((fmt) => ({
+        path: '', name: '', base: '', ext: '', fmt, category: fmt ? categoryOf(fmt) : null, size: 0
+      }));
+      return buildWheel(pseudo, mode, caps);
+    }
+    return buildWheel(files, mode, caps);
+  }, [files, mode, caps, dragging, dragFmts]);
+
+  /** Start the job / open the card for `item` using `inputs` (explicit so a drop can use the freshly resolved files). */
+  const run = async (inputs: FileInfo[], item: WheelItem, withOptions: boolean): Promise<void> => {
+    const paths = inputs.map((f) => f.path);
     if (item.kind === 'tool' && item.toolId) {
       if (!item.needsOptions && !withOptions) {
-        const jobId = await api.startJob({ kind: 'tool', inputs: files.map((f) => f.path), toolId: item.toolId, options: {} });
+        const jobId = await api.startJob({ kind: 'tool', inputs: paths, toolId: item.toolId, options: {} });
         go({ name: 'running', jobId });
       } else {
         go({ name: 'panel', toolId: item.toolId });
@@ -23,8 +40,26 @@ export function WheelStage() {
     }
     if (!item.target) return;
     if (item.needsOptions || withOptions) { go({ name: 'options', target: item.target }); return; }
-    const jobId = await api.startJob({ kind: 'convert', inputs: files.map((f) => f.path), target: item.target });
+    const jobId = await api.startJob({ kind: 'convert', inputs: paths, target: item.target });
     go({ name: 'running', jobId });
+  };
+  const pick = async (i: number, withOptions: boolean): Promise<void> => {
+    const item = model.items[i];
+    if (item && !dragging) await run(files, item, withOptions);
+  };
+
+  const onDropFiles = async (dt: DataTransfer, hit: number | 'center' | null): Promise<void> => {
+    const paths = pathsFromDataTransfer(dt);
+    if (paths.length === 0) return;
+    const before = model;
+    const real = await api.overlayDropped(paths);
+    dropFinished(real);
+    if (!caps) return;
+    const after = buildWheel(real, mode, caps);
+    // Only act when the slice under the cursor means the same thing now that the real files are known.
+    if (typeof hit === 'number' && after.items[hit] && after.items[hit].key === before.items[hit]?.key) {
+      await run(real, after.items[hit], false);
+    }
   };
 
   useEffect(() => {
@@ -47,16 +82,21 @@ export function WheelStage() {
   const caption = hovered
     ? hovered.kind === 'format' ? `Convert to ${hovered.label}` : hovered.label
     : model.emptyReason ?? (mode === 'convert' ? 'Convert formats' : 'Advanced tools');
-  const hubLabel = hovered?.label ?? (files.length > 1 ? `${files.length} files` : first?.fmt?.toUpperCase() ?? '');
+  const hubLabel = hovered?.label ?? (dragging && files.length === 0 && model.items.length === 0
+    ? 'Drop to choose'
+    : files.length > 1 ? `${files.length} files` : first?.fmt?.toUpperCase() ?? '');
+  const subtitle = dragging && files.length === 0
+    ? `Drop on a slice · ${dragFmts.length} item${dragFmts.length === 1 ? '' : 's'}`
+    : files.length === 1 ? first?.name : `${files.length} files`;
 
   return (
     <div className="stage-wheel">
       <Wheel items={model.items} active={active} onActiveChange={setActive} onPick={(i, o) => void pick(i, o)}
-        hubLabel={hubLabel} thumbnail={first?.thumbnail} hubIcon={model.category ? CATEGORY_ICON[model.category] : 'file'} />
+        hubLabel={hubLabel} thumbnail={first?.thumbnail} hubIcon={model.category ? CATEGORY_ICON[model.category] : 'file'}
+        onDragTypes={(dt) => setDragFmts(fmtsFromDragTypes(dt))}
+        onDropFiles={(dt, hit) => { void onDropFiles(dt, hit); }} />
       <p className="stage-wheel__caption">{caption}</p>
-      <p className="stage-wheel__sub">
-        {files.length === 1 ? first?.name : `${files.length} files`} · <kbd>Tab</kbd> {mode === 'convert' ? 'Tools' : 'Formats'}
-      </p>
+      <p className="stage-wheel__sub">{subtitle} · <kbd>Tab</kbd> {mode === 'convert' ? 'Tools' : 'Formats'}</p>
     </div>
   );
 }

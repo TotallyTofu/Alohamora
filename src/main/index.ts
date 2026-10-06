@@ -9,11 +9,14 @@ import { log } from './log';
 import { notifyJobFinished } from './notify';
 import { registerProtocolHandlers, registerSchemes } from './protocol';
 import { blockNetwork, hardenWebContents } from './security';
-import { loadSettings, onSettingsChanged } from './settings';
+import { getSettings, loadSettings, onSettingsChanged } from './settings';
+import { filesFromArgv, queueFiles } from './integrations/argv';
 import { installAppMenu } from './integrations/appMenu';
+import { applyIntegrations } from './integrations';
+import { createTray } from './integrations/tray';
 import { startEngine } from './windows/engineWindow';
 import { createMainWindow, showMainWindow } from './windows/mainWindow';
-import { createOverlayWindow } from './windows/overlayWindow';
+import { createOverlayWindow, openOverlay } from './windows/overlayWindow';
 import { runSelfTest } from './selftest';
 
 sharp.cache(false);                         // avoid file locks (Windows) and stale reads
@@ -21,12 +24,30 @@ if (process.platform === 'win32') app.setAppUserModelId('com.kabooks.app');     
 if (process.platform === 'linux') app.commandLine.appendSwitch('enable-transparent-visuals');  // transparent overlay
 registerSchemes();                          // must run before 'ready'
 
+let resolveStarted: () => void = () => undefined;
+const started = new Promise<void>((r) => { resolveStarted = r; });
+let launchedWithFiles = false;
+/** Files handed to us by the OS open the wheel as soon as the app has finished starting. */
+const openFromOs = (paths: string[]): void => { void started.then(() => openOverlay(paths, 'convert', 'argv')); };
+
+// macOS: Finder "Open With", Dock drop, `open -a Kabooks file` (can fire before 'ready')
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  launchedWithFiles = true;
+  queueFiles([filePath], openFromOs);
+});
+
 if (!process.argv.includes('--selftest') && !app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('before-quit', () => setQuitting());
   app.on('window-all-closed', () => { /* keep running; quitting is explicit */ });
   app.on('activate', () => showMainWindow());   // macOS: clicking the Dock icon re-opens the window
+  app.on('second-instance', (_e, argv) => {
+    const files = filesFromArgv(argv);
+    if (files.length) queueFiles(files, openFromOs);
+    else showMainWindow();
+  });
 
   void app.whenReady().then(async () => {
     installAppMenu();                           // macOS: App/Edit/Window menus (⌘C/⌘V, ⌘,); others: no menu bar
@@ -44,9 +65,18 @@ if (!process.argv.includes('--selftest') && !app.requestSingleInstanceLock()) {
       app.exit(code);
       return;
     }
-    createMainWindow();
+    const initial = filesFromArgv(process.argv);
+    createMainWindow(initial.length === 0 && !launchedWithFiles && !process.argv.includes('--hidden'));
     createOverlayWindow();
-    onSettingsChanged((s) => { nativeTheme.themeSource = s.theme; broadcast(IPC.evSettings, s); });
+    createTray();
+    applyIntegrations(getSettings());
+    onSettingsChanged((s, prev) => {
+      nativeTheme.themeSource = s.theme;
+      broadcast(IPC.evSettings, s);
+      applyIntegrations(s, prev);
+    });
+    resolveStarted();
+    queueFiles(initial, openFromOs);
     log.info('Kabooks ready');
   });
 }

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, screen } from 'electron';
 import { IPC } from '@shared/ipc';
 import { WHEEL_STAGE, type OverlaySize } from '@shared/overlay';
-import type { OverlayInit, Point, WheelMode } from '@shared/types';
+import type { DragState, FileInfo, OverlayInit, Point, WheelMode } from '@shared/types';
 import { getCapabilities } from '../capabilities';
 import { inspectFiles } from '../inspect';
 import { preloadPath, rendererUrl } from '../paths';
@@ -65,3 +65,37 @@ export function hideOverlay(): void { win?.hide(); }
 export function isOverlayVisible(): boolean { return !!win && win.isVisible(); }
 export function getOverlayWindow(): BrowserWindow | null { return win; }
 export function setOverlayAnchor(p: Point): void { anchor = p; }
+
+let dragHideTimer: NodeJS.Timeout | null = null;
+let dropReceived = false;
+
+/** `files` is only known on macOS (Swift helper reads the drag pasteboard); elsewhere the renderer uses MIME types. */
+export function overlayDragStart(mode: WheelMode, at: Point, files?: FileInfo[]): void {
+  if (!win) return;
+  dropReceived = false;
+  anchor = at;
+  place({ width: WHEEL_STAGE.width, height: WHEEL_STAGE.height, anchor: 'wheel' });
+  win.webContents.send(IPC.evOverlayDrag, { active: true, mode, files } satisfies DragState);
+  win.showInactive();                         // do not steal focus from Explorer/Finder mid-drag
+}
+
+/** macOS: deep info (thumbnails) for the dragged files arrives a moment later. */
+export function overlayDragFiles(mode: WheelMode, files: FileInfo[]): void {
+  win?.webContents.send(IPC.evOverlayDrag, { active: true, mode, files } satisfies DragState);
+}
+export function overlayDragMode(mode: WheelMode): void {
+  win?.webContents.send(IPC.evOverlayDrag, { active: true, mode });
+}
+export function overlayDragEnd(): void {
+  if (dragHideTimer) clearTimeout(dragHideTimer);
+  dragHideTimer = setTimeout(() => {      // the HTML drop event can arrive a little after the mouse-up hook
+    if (!dropReceived) { win?.webContents.send(IPC.evOverlayDrag, { active: false, mode: 'convert' }); hideOverlay(); }
+  }, 600);
+}
+export async function overlayDropped(paths: string[]): Promise<FileInfo[]> {
+  dropReceived = true;
+  if (dragHideTimer) clearTimeout(dragHideTimer);
+  win?.focus();
+  const files = await inspectFiles(paths, true);
+  return files;
+}

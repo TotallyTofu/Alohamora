@@ -18,7 +18,10 @@
     "check-binaries": "node scripts/check-binaries.mjs",
     "predev": "node scripts/copy-pdfjs-assets.mjs",
     "prebuild": "node scripts/copy-pdfjs-assets.mjs",
-    "selftest": "npm run build && electron . --selftest"
+    "selftest": "npm run build && electron . --selftest",
+    "icons": "node scripts/make-icons.mjs",
+    "build:mac-helper": "node scripts/build-mac-helper.mjs",
+    "postfetch-binaries": "node scripts/build-mac-helper.mjs"
   },
   "dependencies": {
     "docx": "^9.8.1",
