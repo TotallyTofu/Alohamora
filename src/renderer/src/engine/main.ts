@@ -1,10 +1,12 @@
 import type { EngineApi, EngineMethod } from '@shared/ipc';
+import { PDF_HANDLERS } from './pdf';
 
 declare global { interface Window { kabooksEngine: EngineApi } }
 
 type Handler = (params: never) => Promise<unknown>;
 const handlers: Partial<Record<EngineMethod, Handler>> = {
-  ping: async () => 'pong'
+  ping: async () => 'pong',
+  ...PDF_HANDLERS
 };
 
 /** Phase 6 registers pdf.* handlers through this function. */

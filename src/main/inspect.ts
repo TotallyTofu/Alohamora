@@ -6,6 +6,7 @@ import { splitName } from '@shared/naming';
 import type { FileInfo } from '@shared/types';
 import { probe } from './engines/ffmpeg';
 import { imageSize } from './engines/image';
+import { pdfThumbs, withPdf } from './engines/pdfEngine';
 import { log } from './log';
 import { makeThumbnail } from './thumbnails';
 import { mapLimit } from './util';
@@ -61,8 +62,15 @@ export async function inspectDeep(info: FileInfo): Promise<FileInfo> {
       const s = await imageSize(out);       // HEIC / BMP need a real decode
       out.width = s.width;
       out.height = s.height;
+    } else if (out.category === 'pdf') {
+      await withPdf(out.path, async (doc) => {
+        out.pages = doc.pages;
+        out.width = doc.sizes[0]?.width;
+        out.height = doc.sizes[0]?.height;
+        out.thumbnail = (await pdfThumbs(doc.id, 256, 1))[0];
+      });
     }
-    out.thumbnail = await makeThumbnail(out);
+    if (!out.thumbnail) out.thumbnail = await makeThumbnail(out);
   } catch (e) {
     out.error = e instanceof Error ? e.message : String(e);
     log.warn('inspectDeep failed', out.path, e);

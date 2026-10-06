@@ -24,7 +24,7 @@ Blocked: (write here if something blocks you)
 - [x] 5.6 stages  - [x] 5.7 main window  - [x] 5.8 options/panels  - [x] 5.9 M1 acceptance
 ## Phase 6 — Conversions (M2)
 - [x] 6.1 images raster  - [x] 6.2 SVG  - [x] 6.3 HEIC out  - [x] 6.4 img→PDF/DOCX  - [x] 6.5 subtitles/TXT→cues
-- [ ] 6.6 print/engine/TXT→PDF  - [ ] 6.7 PDF→images  - [ ] 6.8 reflow/TXT  - [ ] 6.9 PDF→DOCX  - [ ] 6.10 PDF→EPUB
+- [x] 6.6 print/engine/TXT→PDF  - [x] 6.7 PDF→images  - [x] 6.8 reflow/TXT  - [ ] 6.9 PDF→DOCX  - [ ] 6.10 PDF→EPUB
 - [ ] 6.11 EPUB→PDF  - [ ] 6.12 OCR  - [ ] 6.13 M2 full matrix
 ## Phase 7 — Video tools (M3a)
 - [ ] 7.1 previews  - [ ] 7.2 editors  - [ ] 7.3 videoArgs  - [ ] 7.4 compress  - [ ] 7.5 trim/split
@@ -56,3 +56,4 @@ Blocked: (write here if something blocks you)
 - 2026-10-06 Tasks 4.1,4.2,4.3 — selftest av: 18 passed / 0 failed / 0 skipped on win32-x64 (FFmpeg 9.0.2).
 - 2026-10-06 Tasks 5.1,5.2,5.3,5.4,5.5,5.6,5.7,5.8,5.9 — M1 verified on Windows by driving the real app over DevTools Protocol + screenshots: wheel (7 audio slices, hover orange), run -> Done 'Saved tone.m4a / Show in Explorer', GIF card via right-click -> clip.gif, Tab -> Tools ring, arrows, number keys, Esc, dark theme, av selftest 18/18. NOT verifiable here: real Alt+drop from Explorer onto the window, macOS/Linux label variants. Added hand-written HomeView/ActivityList/views.css/GifCard/GenericCard/Formats+Settings placeholders (plan only specs them). ComingSoon.tsx skipped (PanelStage handles it inline).
 - 2026-10-06 Tasks 6.1,6.2,6.3,6.4,6.5 — selftest image 14 pass / 2 skip (HEIC encoder absent on Windows), text 5/5. Deviation: TS 7 cannot resolve 'sharp.Sharp' via sharp's 'export =' namespace; code uses 'import type { Sharp } from "sharp"' (scripted rewrite). Plan's literal BOM characters written as \uFEFF escapes. Not verified: HEIC encode/decode (no encoder on this machine).
+- 2026-10-06 Tasks 6.6,6.7,6.8 — text 8/8, pdf 3/3 (selftest). Deviations: pdfjs-dist is v6.4 - PDFDocumentProxy has no destroy(), engine/pdf.ts close() uses loadingTask.destroy(); pdfReflow.ts: two TS narrowing fixes (same behaviour). TextRenderCard/pdfReflow tests hand-written.

@@ -5,6 +5,7 @@ import { CueTimingCard } from './convert/CueTimingCard';
 import { GenericCard } from './convert/GenericCard';
 import { GifCard } from './convert/GifCard';
 import { SvgCard } from './convert/SvgCard';
+import { TextRenderCard } from './convert/TextRenderCard';
 
 export interface ToolPanelProps {
   files: FileInfo[];
@@ -38,3 +39,6 @@ CONVERT_CARDS['*->*'] = { component: GenericCard, width: 420, height: 360 };
 CONVERT_CARDS['image->svg'] = { component: SvgCard, width: 420, height: 440 };
 CONVERT_CARDS['text->srt'] = { component: CueTimingCard, width: 420, height: 420 };
 CONVERT_CARDS['text->vtt'] = { component: CueTimingCard, width: 420, height: 420 };
+CONVERT_CARDS['text->pdf'] = { component: TextRenderCard, width: 420, height: 500 };
+CONVERT_CARDS['text->jpg'] = { component: TextRenderCard, width: 420, height: 500 };
+CONVERT_CARDS['text->png'] = { component: TextRenderCard, width: 420, height: 500 };

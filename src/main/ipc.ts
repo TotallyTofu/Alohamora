@@ -4,6 +4,7 @@ import { IPC } from '@shared/ipc';
 import type { OverlaySize } from '@shared/overlay';
 import type { JobRequest, Settings, WheelMode } from '@shared/types';
 import { getCapabilities } from './capabilities';
+import { pdfThumbs, withPdf } from './engines/pdfEngine';
 import { inspectFiles } from './inspect';
 import { getQueue } from './jobs/queue';
 import { getSettings, updateSettings } from './settings';
@@ -56,5 +57,6 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.openOverlay, (_e, paths: unknown, mode: WheelMode) => openOverlay(strings(paths, 'paths'), mode === 'tools' ? 'tools' : 'convert', 'window'));
   ipcMain.handle(IPC.closeOverlay, () => hideOverlay());
   ipcMain.handle(IPC.resizeOverlay, (_e, size: OverlaySize) => resizeOverlay(size));
+  ipcMain.handle(IPC.pdfThumbnails, (_e, p: unknown, w: unknown) => withPdf(existingPath(p), (doc) => pdfThumbs(doc.id, Number(w) || 160)));
   // preview:* , meta:read and overlay:dropped are registered by later tasks (7.1, 7.10, 8.1, 9.1, 11.6).
 }

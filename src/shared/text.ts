@@ -41,3 +41,14 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0; 
 export function guessLang(text: string): string {
   return /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i.test(text) ? 'vi' : 'en';
 }
+
+export function readerCss(o: { textSize?: 'small' | 'medium' | 'large' | 'xlarge'; font?: TextFont; pageSize?: 'a4' | 'letter' | 'a5' }): string {
+  const pt = { small: 10.5, medium: 12, large: 14, xlarge: 16 }[o.textSize ?? 'medium'];
+  const fam = o.font && o.font !== 'original' ? `font-family: ${fontStack(o.font)} !important;` : '';
+  return `@page { size: ${cssPageSize(o.pageSize ?? 'a4')}; margin: 18mm 16mm; }
+html { font-size: ${pt}pt !important; }
+body { margin: 0 !important; padding: 0 !important; line-height: 1.5 !important; ${fam} }
+p, li, blockquote, dd, div { font-size: 1rem !important; ${fam} }
+img, svg, video { max-width: 100% !important; height: auto !important; break-inside: avoid; }
+h1, h2, h3 { break-after: avoid; }`;
+}

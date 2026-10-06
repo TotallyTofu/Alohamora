@@ -3,6 +3,7 @@ import type { Category, FileInfo, Fmt } from '@shared/types';
 import type { JobContext } from '../jobs/context';
 import { convertAv } from './av';
 import { convertImage } from './image';
+import { convertPdf } from './pdf';
 import { convertSubtitle } from './subtitle';
 import { convertText } from './text';
 
@@ -10,5 +11,5 @@ export type ConvertFn = (file: FileInfo, target: Fmt, opts: ConvertOptions, ctx:
 
 /** One converter per input category. Later tasks add entries here. */
 export const CONVERTERS: Partial<Record<Category, ConvertFn>> = {
-  audio: convertAv, video: convertAv, image: convertImage, subtitle: convertSubtitle, text: convertText
+  audio: convertAv, video: convertAv, image: convertImage, pdf: convertPdf, subtitle: convertSubtitle, text: convertText
 };

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
 import sharp from 'sharp';
 import { runFfmpeg } from '../engines/ffmpeg';
 import { encodeHeicFile } from '../engines/heif';
@@ -45,6 +46,30 @@ export const FIXTURES: Record<string, Maker> = {
   },
   'subs.vtt': async (out) => {
     await fs.promises.writeFile(out, 'WEBVTT\n\nNOTE test file\n\n00:01.000 --> 00:02.500 align:start\nHello <v Bob>world</v>\n\nid2\n00:00:03.000 --> 00:00:04.000\nSecond line\n', 'utf8');
+  },
+  'doc.pdf': async (out, dir) => {
+    const pdf = await PDFDocument.create();
+    pdf.setTitle('Kabooks Test');
+    const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const reg = await pdf.embedFont(StandardFonts.Helvetica);
+    const jpg = await pdf.embedJpg(await sharp(await ensureFixture(dir, 'image.png')).flatten({ background: '#fff' }).jpeg().toBuffer());
+    const para = 'Kabooks converts files offline. This paragraph is long enough to wrap across several lines so that the reflow logic has something to join back together into one paragraph.';
+    for (let p = 1; p <= 3; p++) {
+      const page = pdf.addPage([612, 792]);
+      page.drawText(p === 1 ? 'Kabooks Test Document' : `Chapter ${p}`, { x: 72, y: 700, size: 24, font: bold });
+      const words = para.split(' ');
+      let line = '';
+      let y = 660;
+      for (const w of words) {
+        if (reg.widthOfTextAtSize(`${line} ${w}`, 12) > 460) { page.drawText(line.trim(), { x: 72, y, size: 12, font: reg }); y -= 16; line = ''; }
+        line += ` ${w}`;
+      }
+      page.drawText(line.trim(), { x: 72, y, size: 12, font: reg });
+      if (p === 2) page.drawImage(jpg, { x: 72, y: 300, width: 240, height: 180 });
+      if (p === 3) ['• First item', '• Second item'].forEach((t, i) => page.drawText(t, { x: 72, y: 520 - i * 18, size: 12, font: reg }));
+      page.drawText(String(p), { x: 300, y: 30, size: 10, font: reg });
+    }
+    await fs.promises.writeFile(out, await pdf.save());
   }
 };
 

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { parseSubtitles } from '@shared/subtitles';
 import type { ConvertOptions } from '@shared/toolOptions';
 import type { Fmt } from '@shared/types';
-import { check, expectCount, expectTextIncludes } from '../assert';
+import { check, expectCount, expectImage, expectPdfPages, expectTextIncludes } from '../assert';
 import type { SelfTestCase } from '../types';
 
 function textCase(
@@ -36,5 +36,11 @@ export const TEXT_CASES: SelfTestCase[] = [
     const n = parseSubtitles(read(f)).length;
     check(n >= 4, `expected at least 4 cues, got ${n}`);
   }),
-  textCase('convert.text.txt-vtt', 'text.txt', 'vtt', (f) => { expectTextIncludes(f, 'WEBVTT'); })
+  textCase('convert.text.txt-vtt', 'text.txt', 'vtt', (f) => { expectTextIncludes(f, 'WEBVTT'); }),
+  textCase('convert.text.txt-pdf', 'text.txt', 'pdf', async (f) => {
+    const n = await expectPdfPages(f, 'any');
+    check(n >= 1, 'PDF should have at least one page');
+  }),
+  textCase('convert.text.txt-png', 'text.txt', 'png', (f) => expectImage(f, 'png')),
+  textCase('convert.text.txt-jpg', 'text.txt', 'jpg', (f) => expectImage(f, 'jpeg'))
 ];
