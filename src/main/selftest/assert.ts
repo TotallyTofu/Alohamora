@@ -1,5 +1,8 @@
 import fs from 'node:fs';
 import { probe } from '../engines/ffmpeg';
+import sharp from 'sharp';
+import JSZip from 'jszip';
+import { PDFDocument } from 'pdf-lib';
 
 export function check(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
@@ -33,4 +36,25 @@ export function expectMagic(file: string, offset: number, ascii: string): void {
 
 export function expectTextIncludes(file: string, text: string): void {
   check(fs.readFileSync(file, 'utf8').includes(text), `${file} does not contain "${text}"`);
+}
+
+export async function expectImage(file: string, format: string, dims?: { width: number; height: number }): Promise<void> {
+  expectNonEmpty(file);
+  const m = await sharp(file).metadata();
+  check(m.format === format, `image format: expected ${format}, got ${m.format}`);
+  if (dims) check(m.width === dims.width && m.height === dims.height, `size: expected ${dims.width}x${dims.height}, got ${m.width}x${m.height}`);
+}
+
+export async function expectPdfPages(file: string, pages: number | 'any'): Promise<number> {
+  expectNonEmpty(file);
+  const doc = await PDFDocument.load(fs.readFileSync(file));
+  const n = doc.getPageCount();
+  if (pages !== 'any') check(n === pages, `PDF pages: expected ${pages}, got ${n}`);
+  return n;
+}
+export async function expectZipEntries(file: string, names: string[]): Promise<JSZip> {
+  expectNonEmpty(file);
+  const zip = await JSZip.loadAsync(fs.readFileSync(file));
+  for (const n of names) check(zip.file(n) !== null, `zip ${file} has no entry ${n}`);
+  return zip;
 }

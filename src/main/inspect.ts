@@ -5,6 +5,7 @@ import { categoryOf, extOf, fmtFromExt } from '@shared/formats';
 import { splitName } from '@shared/naming';
 import type { FileInfo } from '@shared/types';
 import { probe } from './engines/ffmpeg';
+import { imageSize } from './engines/image';
 import { log } from './log';
 import { makeThumbnail } from './thumbnails';
 import { mapLimit } from './util';
@@ -56,6 +57,10 @@ export async function inspectDeep(info: FileInfo): Promise<FileInfo> {
       const swap = (m.orientation ?? 1) >= 5;
       out.width = swap ? m.height : m.width;
       out.height = swap ? m.width : m.height;
+    } else if (out.category === 'image') {
+      const s = await imageSize(out);       // HEIC / BMP need a real decode
+      out.width = s.width;
+      out.height = s.height;
     }
     out.thumbnail = await makeThumbnail(out);
   } catch (e) {

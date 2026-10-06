@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import sharp from 'sharp';
 import type { FileInfo } from '@shared/types';
 import { runFfmpegToBuffer } from './engines/ffmpeg';
+import { loadImage } from './engines/image';
 
 const cache = new Map<string, string>();
 const toDataUrl = (b: Buffer): string => `data:image/jpeg;base64,${b.toString('base64')}`;
@@ -10,7 +11,9 @@ const SCALE = 'scale=256:256:force_original_aspect_ratio=decrease';
 async function build(f: FileInfo): Promise<string | undefined> {
   switch (f.category) {
     case 'image': {
-      if (f.fmt === 'heic' || f.fmt === 'bmp') return undefined;      // Task 6.1
+      if (f.fmt === 'heic' || f.fmt === 'bmp') {
+        return toDataUrl(await (await loadImage(f)).resize(256, 256, { fit: 'inside' }).jpeg({ quality: 70 }).toBuffer());
+      }
       const b = await sharp(f.path, { failOn: 'none', density: 72 }).rotate().resize(256, 256, { fit: 'inside' }).jpeg({ quality: 70 }).toBuffer();
       return toDataUrl(b);
     }

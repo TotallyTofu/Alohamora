@@ -1,8 +1,10 @@
 import type { ComponentType } from 'react';
 import type { ConvertOptions } from '@shared/toolOptions';
 import type { Category, FileInfo, Fmt, ToolId } from '@shared/types';
+import { CueTimingCard } from './convert/CueTimingCard';
 import { GenericCard } from './convert/GenericCard';
 import { GifCard } from './convert/GifCard';
+import { SvgCard } from './convert/SvgCard';
 
 export interface ToolPanelProps {
   files: FileInfo[];
@@ -33,3 +35,6 @@ export function convertCardFor(category: Category | null, target: Fmt): ConvertC
 
 CONVERT_CARDS['video->gif'] = { component: GifCard, width: 420, height: 420 };
 CONVERT_CARDS['*->*'] = { component: GenericCard, width: 420, height: 360 };
+CONVERT_CARDS['image->svg'] = { component: SvgCard, width: 420, height: 440 };
+CONVERT_CARDS['text->srt'] = { component: CueTimingCard, width: 420, height: 420 };
+CONVERT_CARDS['text->vtt'] = { component: CueTimingCard, width: 420, height: 420 };
