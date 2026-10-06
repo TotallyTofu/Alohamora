@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatBytes } from '@shared/time';
 import type { JobUpdate } from '@shared/types';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
@@ -7,6 +8,7 @@ import { baseName } from '../lib/format';
 import { revealLabel } from '../lib/platform';
 
 const MAX_ROWS = 20;
+const isActive = (j: JobUpdate): boolean => j.status === 'running' || j.status === 'queued';
 
 function StatusIcon({ status }: { status: JobUpdate['status'] }) {
   if (status === 'done') return <span className="activity__icon activity__icon--ok"><Icon name="check" size={16} /></span>;
@@ -16,10 +18,11 @@ function StatusIcon({ status }: { status: JobUpdate['status'] }) {
 }
 
 function ActivityRow({ job }: { job: JobUpdate }) {
-  const running = job.status === 'running' || job.status === 'queued';
+  const running = isActive(job);
   const first = job.request.inputs[0];
   const extra = job.request.inputs.length - 1;
   const name = `${first ? baseName(first) : ''}${extra > 0 ? ` +${extra}` : ''}`;
+  const doneNote = [job.note, job.outputBytes ? formatBytes(job.outputBytes) : ''].filter(Boolean).join(' · ');
   return (
     <li className="activity__row">
       <StatusIcon status={job.status} />
@@ -30,8 +33,8 @@ function ActivityRow({ job }: { job: JobUpdate }) {
             <span style={{ width: `${Math.round(job.progress * 100)}%` }} />
           </div>
         )}
-        {job.status === 'done' && job.note && <div className="activity__note">{job.note}</div>}
-        {job.status === 'error' && <div className="activity__note activity__note--err">{job.error}</div>}
+        {job.status === 'done' && doneNote && <div className="activity__note" title={doneNote}>{doneNote}</div>}
+        {job.status === 'error' && <div className="activity__note activity__note--err" title={job.error}>{job.error}</div>}
         {job.status === 'canceled' && <div className="activity__note">Canceled</div>}
       </div>
       {running && <Button variant="ghost" onClick={() => void api.cancelJob(job.id)}>Cancel</Button>}
@@ -40,6 +43,12 @@ function ActivityRow({ job }: { job: JobUpdate }) {
       )}
     </li>
   );
+}
+
+function startOfToday(): number {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
 }
 
 export function ActivityList() {
@@ -55,12 +64,24 @@ export function ActivityList() {
   }, []);
 
   if (jobs.length === 0) return null;
+  const today = startOfToday();
+  const groups = [
+    { title: 'Today', rows: jobs.filter((j) => j.createdAt >= today) },
+    { title: 'Earlier', rows: jobs.filter((j) => j.createdAt < today) }
+  ].filter((g) => g.rows.length > 0);
+  const hasFinished = jobs.some((j) => !isActive(j));
   return (
     <section className="activity" aria-label="Recent activity">
-      <h2 className="activity__heading">Recent</h2>
-      <ul className="activity__list">
-        {jobs.map((j) => <ActivityRow key={j.id} job={j} />)}
-      </ul>
+      <div className="activity__head">
+        <h2 className="activity__heading">Recent</h2>
+        {hasFinished && <Button variant="ghost" onClick={() => setJobs((cur) => cur.filter(isActive))}>Clear</Button>}
+      </div>
+      {groups.map((g) => (
+        <div key={g.title}>
+          {groups.length > 1 && <h3 className="activity__group">{g.title}</h3>}
+          <ul className="activity__list">{g.rows.map((j) => <ActivityRow key={j.id} job={j} />)}</ul>
+        </div>
+      ))}
     </section>
   );
 }

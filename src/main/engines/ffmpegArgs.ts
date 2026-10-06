@@ -74,12 +74,23 @@ function videoAudioCodec(target: Fmt, q: Quality): string[] {
   return ['-c:a', 'aac', '-b:a', `${q.audioKbps}k`];
 }
 
-/** Codec flags to encode INTO `target`. No -i, -vf, -map or output path. */
-export function videoEncodeArgs(target: Fmt, q: Quality, f: MediaFacts, audio: 'encode' | 'copy' | 'none' = 'encode'): string[] {
+/** Codec flags for a verified hardware H.264 encoder; quality roughly matches CRF 23. */
+export function hwH264Args(encoder: string, crf: number): string[] {
+  switch (encoder) {
+    case 'h264_videotoolbox': return ['-c:v', 'h264_videotoolbox', '-q:v', String(Math.max(30, Math.min(80, 100 - crf * 1.6))), '-allow_sw', '1', '-pix_fmt', 'yuv420p'];
+    case 'h264_nvenc': return ['-c:v', 'h264_nvenc', '-preset', 'p5', '-rc', 'vbr', '-cq', String(crf), '-b:v', '0', '-pix_fmt', 'yuv420p'];
+    case 'h264_qsv': return ['-c:v', 'h264_qsv', '-global_quality', String(crf), '-pix_fmt', 'nv12'];
+    case 'h264_amf': return ['-c:v', 'h264_amf', '-rc', 'cqp', '-qp_i', String(crf), '-qp_p', String(crf), '-pix_fmt', 'yuv420p'];
+    default: return ['-c:v', 'libx264', '-preset', 'medium', '-crf', String(crf), '-pix_fmt', 'yuv420p'];
+  }
+}
+
+/** Codec flags to encode INTO `target`. No -i, -vf, -map or output path. `hw` = a verified hardware H.264 encoder (or null). */
+export function videoEncodeArgs(target: Fmt, q: Quality, f: MediaFacts, audio: 'encode' | 'copy' | 'none' = 'encode', hw: string | null = null): string[] {
   const a: string[] = [];
   switch (target) {
     case 'mp4': case 'mov': case 'mkv':
-      a.push('-c:v', 'libx264', '-preset', 'medium', '-crf', String(q.crf), '-pix_fmt', 'yuv420p');
+      a.push(...(hw ? hwH264Args(hw, q.crf) : ['-c:v', 'libx264', '-preset', 'medium', '-crf', String(q.crf), '-pix_fmt', 'yuv420p']));
       break;
     case 'webm':
       a.push('-c:v', 'libvpx-vp9', '-crf', String(Math.min(63, q.crf + 9)), '-b:v', '0', '-row-mt', '1', '-deadline', 'good', '-cpu-used', '4', '-pix_fmt', 'yuv420p');
@@ -135,7 +146,7 @@ export function audioConvertArgs(input: string, output: string, f: MediaFacts, t
   ];
 }
 
-export function videoConvertArgs(input: string, output: string, f: MediaFacts, target: Fmt, q: Quality, gif?: GifOptions): string[] {
+export function videoConvertArgs(input: string, output: string, f: MediaFacts, target: Fmt, q: Quality, gif?: GifOptions, hw: string | null = null): string[] {
   if (target === 'mp3') return audioConvertArgs(input, output, f, 'mp3', q, false);
   if (canRemux(f, target)) {
     const a = ['-i', input, '-map', '0:v:0', '-map', '0:a?', '-c', 'copy'];
@@ -146,5 +157,5 @@ export function videoConvertArgs(input: string, output: string, f: MediaFacts, t
     return [...a, output];
   }
   const maps = target === 'gif' ? ['-map', '0:v:0'] : ['-map', '0:v:0', '-map', '0:a:0?'];
-  return ['-i', input, ...maps, '-vf', videoFilter(target, [], gif), ...videoEncodeArgs(target, q, f), output];
+  return ['-i', input, ...maps, '-vf', videoFilter(target, [], gif), ...videoEncodeArgs(target, q, f, 'encode', hw), output];
 }

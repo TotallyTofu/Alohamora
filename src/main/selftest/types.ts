@@ -8,4 +8,5 @@ export interface SelfTestCase {
   check?: (outputs: string[]) => Promise<void>;   // required unless expectError is set
   expectError?: RegExp;                           // the job must FAIL with a message matching this
   skip?: (caps: Capabilities) => string | false;  // return a reason to skip
+  capsOverride?: Partial<Capabilities>;           // run this case with different capabilities (e.g. a broken hardware encoder)
 }

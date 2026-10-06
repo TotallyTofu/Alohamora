@@ -68,7 +68,12 @@ export async function probe(filePath: string): Promise<ProbeResult> {
   const key = `${filePath}|${st.size}|${st.mtimeMs}`;
   const hit = probeCache.get(key);
   if (hit) return hit;
-  const r = await runProcess(ffprobePath(), ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', filePath], { name: 'FFprobe' });
+  const r = await runProcess(ffprobePath(), ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', filePath], { name: 'FFprobe' })
+    .catch((e: unknown) => {
+      // Appendix C: "not really the format its name says" instead of "FFprobe failed (exit code 1)"
+      if (e instanceof ToolError) throw new ToolError(friendlyFfmpegError(e.details), e.details);
+      throw e;
+    });
   const result = parseProbeJson(r.stdout.toString('utf8'));
   if (probeCache.size > 300) probeCache.clear();
   probeCache.set(key, result);

@@ -7,6 +7,8 @@ import { broadcast, registerIpc } from './ipc';
 import { initQueue } from './jobs/queue';
 import { log } from './log';
 import { notifyJobFinished } from './notify';
+import { detectHardwareVideo } from './engines/hwVideo';
+import { runHousekeeping } from './housekeeping';
 import { registerProtocolHandlers, registerSchemes } from './protocol';
 import { blockNetwork, hardenWebContents } from './security';
 import { getSettings, loadSettings, onSettingsChanged } from './settings';
@@ -76,6 +78,8 @@ if (!process.argv.includes('--selftest') && !app.requestSingleInstanceLock()) {
       applyIntegrations(s, prev);
     });
     resolveStarted();
+    void detectHardwareVideo();                 // background: 1-frame test encodes, never blocks start-up
+    void runHousekeeping();
     queueFiles(initial, openFromOs);
     log.info('Kabooks ready');
   });

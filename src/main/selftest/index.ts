@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '@shared/types';
 import { getCapabilities } from '../capabilities';
 import { ToolError, toUserMessage, UserError } from '../errors';
 import { runJobNow } from '../jobs/execute';
+import { detectHardwareVideo } from '../engines/hwVideo';
 import { CASES } from './cases';
 import { ensureFixture } from './fixtures';
 
@@ -24,6 +25,7 @@ export async function runSelfTest(argv: string[]): Promise<number> {
   const fxDir = path.join(root, 'fixtures');
   const outRoot = path.join(root, 'out');
   await fs.promises.rm(outRoot, { recursive: true, force: true });
+  await detectHardwareVideo();            // so hardware-encoder cases know what this machine can do
   const caps = getCapabilities();
   const cases = CASES.filter((c) => !only || c.group === only || c.group.startsWith(`${only}.`) || c.name.startsWith(only));
   const results: Result[] = [];
@@ -41,7 +43,7 @@ export async function runSelfTest(argv: string[]): Promise<number> {
       let error: unknown = null;
       try {
         const settings = { ...DEFAULT_SETTINGS, outputMode: 'custom-folder' as const, customOutputDir: outDir };
-        outputs = (await runJobNow(c.request(inputs), { settings, caps })).outputs;
+        outputs = (await runJobNow(c.request(inputs), { settings, caps: { ...caps, ...c.capsOverride } })).outputs;
       } catch (e) {
         error = e;
       }

@@ -25,6 +25,13 @@ export const FIXTURES: Record<string, Maker> = {
   'video-copy.mp4': async (out, dir) => {
     await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-c', 'copy', out]);
   },
+  'video-vp9.webm': (out) => runFfmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=25', '-f', 'lavfi', '-i', 'sine=frequency=330:sample_rate=48000',
+    '-t', '3', '-c:v', 'libvpx-vp9', '-b:v', '300k', '-c:a', 'libopus', out]),
+  // not what their extension says
+  'fake.mp4': async (out) => { await fs.promises.writeFile(out, 'This is only text, not a video.\n'.repeat(40), 'utf8'); },
+  'fake.mp3': async (out) => { await fs.promises.writeFile(out, 'This is only text, not audio.\n'.repeat(40), 'utf8'); },
+  'broken.png': async (out) => { await fs.promises.writeFile(out, 'not a png at all', 'utf8'); },
+  'broken.pdf': async (out) => { await fs.promises.writeFile(out, '%PDF-1.4\nthis file is cut off', 'utf8'); },
   'video-noaudio.mp4': (out) => runFfmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=25', '-t', '2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out]),
   'video.mkv': async (out, dir) => { await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-c', 'copy', out]); },
   'anim.gif': async (out, dir) => { await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-t', '2', '-vf', 'fps=10,scale=160:-1', out]); },

@@ -1,6 +1,6 @@
-export function Toggle(p: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+export function Toggle(p: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
   return (
-    <button type="button" role="switch" aria-checked={p.checked} aria-label={p.label}
+    <button type="button" role="switch" aria-checked={p.checked} aria-label={p.label} disabled={p.disabled}
       className={`toggle${p.checked ? ' is-on' : ''}`} onClick={() => p.onChange(!p.checked)}>
       <span className="toggle__knob" />
     </button>

@@ -5,7 +5,7 @@ import { UserError } from '../../errors';
 import { runFfmpeg } from '../../engines/ffmpeg';
 import { compressPlan, targetVideoKbps } from '../../engines/videoArgs';
 import type { ToolRunFn } from '../index';
-import { videoFacts } from './common';
+import { runWithHwFallback, videoFacts } from './common';
 
 export const runVideoCompress: ToolRunFn = async ([file], options, ctx) => {
   const o = withDefaults<VideoCompressOptions>('video.compress', options);
@@ -16,9 +16,15 @@ export const runVideoCompress: ToolRunFn = async ([file], options, ctx) => {
     throw new UserError(`${o.targetSizeMb} MB is too small for a ${formatDuration(f.durationSec)} video. Try at least ${minMb} MB.`);
   }
   const out = ctx.newOutput({ source: file.path, ext: outFmt, suffix: 'compressed' });
-  const passes = compressPlan(file.path, out, f, o, outFmt, ctx.tempPath('pass'));
-  for (let i = 0; i < passes.length; i++) {
-    await runFfmpeg(passes[i], { durationSec: f.durationSec, signal: ctx.signal, onProgress: (p) => ctx.progress((i + p) / passes.length) });
+  const passLog = ctx.tempPath('pass');
+  const passes = compressPlan(file.path, out, f, o, outFmt, passLog);
+  if (passes.length === 1) {
+    await runWithHwFallback(ctx, (hw) => compressPlan(file.path, out, f, o, outFmt, passLog, hw)[0],
+      { durationSec: f.durationSec, signal: ctx.signal, onProgress: (p) => ctx.progress(p) });
+  } else {
+    for (let i = 0; i < passes.length; i++) {
+      await runFfmpeg(passes[i], { durationSec: f.durationSec, signal: ctx.signal, onProgress: (p) => ctx.progress((i + p) / passes.length) });
+    }
   }
   const before = file.size;
   const after = (await fs.promises.stat(out)).size;

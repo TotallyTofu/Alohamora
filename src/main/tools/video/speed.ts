@@ -1,9 +1,8 @@
 import { withDefaults, type VideoSpeedOptions } from '@shared/toolOptions';
 import { UserError } from '../../errors';
-import { runFfmpeg } from '../../engines/ffmpeg';
 import { speedArgs } from '../../engines/videoArgs';
 import type { ToolRunFn } from '../index';
-import { sameFmt, toolQuality, videoFacts } from './common';
+import { sameFmt, toolQuality, videoFacts, runWithHwFallback } from './common';
 
 export const runVideoSpeed: ToolRunFn = async ([file], options, ctx) => {
   const o = withDefaults<VideoSpeedOptions>('video.speed', options);
@@ -11,6 +10,6 @@ export const runVideoSpeed: ToolRunFn = async ([file], options, ctx) => {
   const f = await videoFacts(file);
   const fmt = sameFmt(file);
   const out = ctx.newOutput({ source: file.path, ext: fmt, suffix: `${o.factor}x` });
-  await runFfmpeg(speedArgs(file.path, out, f, o.factor, o.keepAudio, fmt, toolQuality(ctx)),
+  await runWithHwFallback(ctx, (hw) => speedArgs(file.path, out, f, o.factor, o.keepAudio, fmt, toolQuality(ctx), hw),
     { durationSec: f.durationSec / o.factor, signal: ctx.signal, onProgress: (p) => ctx.progress(p) });
 };

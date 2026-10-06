@@ -124,6 +124,7 @@ export interface JobUpdate {
   detail?: string;           // "geese.mov · 2 of 5"
   outputs: string[];         // absolute final paths (status 'done')
   note?: string;             // "Saved 42 % (12.3 MB → 7.1 MB)"
+  outputBytes?: number;      // total size of the outputs (status 'done')
   error?: string;            // user-facing message
   errorDetails?: string;     // technical text
   createdAt: number;

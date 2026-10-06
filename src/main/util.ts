@@ -34,3 +34,21 @@ export function pathKey(p: string): string {
   const abs = path.resolve(p);
   return process.platform === 'linux' ? abs : abs.toLowerCase();
 }
+
+/** Remove entries in `dir` that were last modified more than `maxAgeMs` ago. Never touches anything outside `dir`. */
+export async function removeOlderThan(dir: string, maxAgeMs: number, now = Date.now()): Promise<number> {
+  let removed = 0;
+  let names: string[] = [];
+  try { names = await fs.promises.readdir(dir); } catch { return 0; }
+  for (const name of names) {
+    const p = path.join(dir, name);
+    try {
+      const st = await fs.promises.stat(p);
+      if (now - st.mtimeMs > maxAgeMs) {
+        await fs.promises.rm(p, { recursive: true, force: true, maxRetries: 2, retryDelay: 200 });
+        removed++;
+      }
+    } catch { /* in use or already gone */ }
+  }
+  return removed;
+}

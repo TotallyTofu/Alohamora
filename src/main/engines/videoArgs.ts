@@ -1,7 +1,7 @@
 import type { PixelRect } from '@shared/geometry';
 import type { VideoCompressOptions } from '@shared/toolOptions';
 import type { Fmt } from '@shared/types';
-import { EVEN_SCALE, videoEncodeArgs, videoFilter, type MediaFacts, type Quality } from './ffmpegArgs';
+import { EVEN_SCALE, hwH264Args, videoEncodeArgs, videoFilter, type MediaFacts, type Quality } from './ffmpegArgs';
 
 const t3 = (s: number): string => s.toFixed(3);
 const faststart = (fmt: Fmt): string[] => (fmt === 'mp4' || fmt === 'mov' ? ['-movflags', '+faststart'] : []);
@@ -23,7 +23,7 @@ export function targetVideoKbps(targetMb: number, durationSec: number, audioKbps
 }
 
 /** One or two FFmpeg runs (two = target-size two-pass). */
-export function compressPlan(input: string, output: string, f: MediaFacts, o: VideoCompressOptions, outFmt: 'mp4' | 'webm', passLog: string): string[][] {
+export function compressPlan(input: string, output: string, f: MediaFacts, o: VideoCompressOptions, outFmt: 'mp4' | 'webm', passLog: string, hw: string | null = null): string[][] {
   const size = f.width && f.height ? capSize(f.width, f.height, o.maxHeight) : null;
   const vf = [...(size ? [`scale=${size.width}:${size.height}`] : []), EVEN_SCALE].join(',');
   const base = ['-i', input, '-map', '0:v:0', '-vf', vf];
@@ -43,21 +43,23 @@ export function compressPlan(input: string, output: string, f: MediaFacts, o: Vi
   const h265 = !webm && o.codec === 'h265';
   const v = webm
     ? ['-c:v', 'libvpx-vp9', '-crf', String(PRESET_CRF[o.preset] + 9), '-b:v', '0', '-row-mt', '1', '-deadline', 'good', '-cpu-used', '4', '-pix_fmt', 'yuv420p']
-    : ['-c:v', h265 ? 'libx265' : 'libx264', '-preset', 'medium', '-crf', String(PRESET_CRF[o.preset] + (h265 ? 4 : 0)), '-pix_fmt', 'yuv420p', ...(h265 ? ['-tag:v', 'hvc1'] : [])];
+    : hw && !h265
+      ? hwH264Args(hw, PRESET_CRF[o.preset])           // hardware only in quality mode (no classic two-pass)
+      : ['-c:v', h265 ? 'libx265' : 'libx264', '-preset', 'medium', '-crf', String(PRESET_CRF[o.preset] + (h265 ? 4 : 0)), '-pix_fmt', 'yuv420p', ...(h265 ? ['-tag:v', 'hvc1'] : [])];
   return [[...base, ...v, ...audio, ...tail, output]];
 }
 
-export function trimArgs(input: string, output: string, f: MediaFacts, start: number, end: number, precise: boolean, fmt: Fmt, q: Quality): string[] {
+export function trimArgs(input: string, output: string, f: MediaFacts, start: number, end: number, precise: boolean, fmt: Fmt, q: Quality, hw: string | null = null): string[] {
   const dur = Math.max(0.05, end - start);
   if (!precise && fmt !== 'gif') {
     return ['-ss', t3(start), '-i', input, '-t', t3(dur), '-map', '0:v?', '-map', '0:a?', '-c', 'copy', '-avoid_negative_ts', 'make_zero', ...faststart(fmt), output];
   }
-  return ['-ss', t3(start), '-i', input, '-t', t3(dur), '-map', '0:v:0', ...audioMap(fmt), '-vf', videoFilter(fmt, [], { width: 0, fps: Math.round(f.fps || 12) }), ...videoEncodeArgs(fmt, q, f), output];
+  return ['-ss', t3(start), '-i', input, '-t', t3(dur), '-map', '0:v:0', ...audioMap(fmt), '-vf', videoFilter(fmt, [], { width: 0, fps: Math.round(f.fps || 12) }), ...videoEncodeArgs(fmt, q, f, 'encode', hw), output];
 }
 
-export function cropArgs(input: string, output: string, f: MediaFacts, r: PixelRect, fmt: Fmt, q: Quality): string[] {
+export function cropArgs(input: string, output: string, f: MediaFacts, r: PixelRect, fmt: Fmt, q: Quality, hw: string | null = null): string[] {
   return ['-i', input, '-map', '0:v:0', ...audioMap(fmt), '-vf', videoFilter(fmt, [`crop=${r.w}:${r.h}:${r.x}:${r.y}`], { width: 0, fps: Math.round(f.fps || 12) }),
-    ...videoEncodeArgs(fmt, q, f, 'copy'), output];
+    ...videoEncodeArgs(fmt, q, f, 'copy', hw), output];
 }
 
 export function atempoChain(factor: number): string {
@@ -69,12 +71,12 @@ export function atempoChain(factor: number): string {
   return parts.join(',');
 }
 
-export function speedArgs(input: string, output: string, f: MediaFacts, factor: number, keepAudio: boolean, fmt: Fmt, q: Quality): string[] {
+export function speedArgs(input: string, output: string, f: MediaFacts, factor: number, keepAudio: boolean, fmt: Fmt, q: Quality, hw: string | null = null): string[] {
   const vf = videoFilter(fmt, [`setpts=PTS/${factor.toFixed(4)}`], { width: 0, fps: Math.round(f.fps || 12) });
   if (!(keepAudio && f.hasAudio && fmt !== 'gif')) {
-    return ['-i', input, '-map', '0:v:0', '-vf', vf, ...videoEncodeArgs(fmt, q, f, 'none'), output];
+    return ['-i', input, '-map', '0:v:0', '-vf', vf, ...videoEncodeArgs(fmt, q, f, 'none', hw), output];
   }
-  return ['-i', input, '-filter_complex', `[0:v:0]${vf}[v];[0:a:0]${atempoChain(factor)}[a]`, '-map', '[v]', '-map', '[a]', ...videoEncodeArgs(fmt, q, f), output];
+  return ['-i', input, '-filter_complex', `[0:v:0]${vf}[v];[0:a:0]${atempoChain(factor)}[a]`, '-map', '[v]', '-map', '[a]', ...videoEncodeArgs(fmt, q, f, 'encode', hw), output];
 }
 
 export function muteArgs(input: string, output: string, fmt: Fmt): string[] {
@@ -112,11 +114,11 @@ export function redactGraph(regions: PixelRegion[]): { graph: string; out: strin
   return { graph: parts.join(';'), out: cur };
 }
 
-export function redactArgs(input: string, output: string, f: MediaFacts, regions: PixelRegion[], fmt: Fmt, q: Quality): string[] {
+export function redactArgs(input: string, output: string, f: MediaFacts, regions: PixelRegion[], fmt: Fmt, q: Quality, hw: string | null = null): string[] {
   const { graph, out } = redactGraph(regions);
   const tail = videoFilter(fmt, [], { width: 0, fps: Math.round(f.fps || 12) });
   return ['-i', input, '-filter_complex', `${graph};[${out}]${tail}[vout]`, '-map', '[vout]', ...audioMap(fmt),
-    ...videoEncodeArgs(fmt, q, f, 'copy'), '-map_metadata', '-1', output];
+    ...videoEncodeArgs(fmt, q, f, 'copy', hw), '-map_metadata', '-1', output];
 }
 
 export function metadataArgs(input: string, output: string, o: { removeAll: boolean; tags: Record<string, string> }, fmt: Fmt): string[] {

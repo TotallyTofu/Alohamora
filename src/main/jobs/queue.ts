@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
 import type { JobRequest, JobUpdate } from '@shared/types';
 import { getCapabilities } from '../capabilities';
 import { CanceledError, toUserMessage } from '../errors';
@@ -57,7 +58,9 @@ export class JobQueue {
         caps: getCapabilities(),
         onProgress: (p, detail) => this.patch(r, { progress: p, detail: detail ?? r.update.detail }, false)
       });
-      this.finish(r, { status: 'done', progress: 1, outputs: res.outputs, note: res.notes.join(' · ') || undefined });
+      let outputBytes = 0;
+      for (const o of res.outputs) outputBytes += await fs.promises.stat(o).then((s) => s.size).catch(() => 0);
+      this.finish(r, { status: 'done', progress: 1, outputs: res.outputs, note: res.notes.join(' · ') || undefined, outputBytes });
     } catch (e) {
       if (e instanceof CanceledError || r.controller.signal.aborted) {
         this.finish(r, { status: 'canceled' });

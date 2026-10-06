@@ -21,7 +21,9 @@ export async function loadImage(file: Pick<FileInfo, 'path' | 'fmt'>, opts: { de
       return sharp(png);
     }
     if (file.fmt === 'svg') return sharp(file.path, { density: opts.density ?? 300 });
-    return sharp(file.path, { failOn: 'none' }).rotate();   // rotate() = auto-orient from EXIF and drop the tag
+    const img = sharp(file.path, { failOn: 'none' }).rotate();   // rotate() = auto-orient from EXIF and drop the tag
+    await img.metadata();                                        // reads the header now, so unreadable files fail here with a clear message
+    return img;
   } catch (e) {
     throw new UserError("Kabooks couldn't read this image. It may be damaged.", (e as Error).message);
   }

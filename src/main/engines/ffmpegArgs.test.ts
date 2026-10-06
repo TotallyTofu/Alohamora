@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  EVEN_SCALE, audioConvertArgs, canRemux, toFacts, videoConvertArgs, videoFilter, wmvBitrate, type MediaFacts
+  EVEN_SCALE, audioConvertArgs, canRemux, hwH264Args, toFacts, videoConvertArgs, videoEncodeArgs, videoFilter, wmvBitrate, type MediaFacts
 } from './ffmpegArgs';
 
 const Q = { crf: 23, audioKbps: 192 };
@@ -118,5 +118,29 @@ describe('misc helpers', () => {
       audio: { codec: 'aac', sampleRate: 48000, channels: 2, bitRate: 1 }
     });
     expect(f).toMatchObject({ hasVideo: true, hasAudio: true, width: 1080, height: 1920, videoCodec: 'h264' });
+  });
+});
+
+describe('hardware H.264', () => {
+  it('hwH264Args per encoder', () => {
+    expect(hwH264Args('h264_videotoolbox', 23)).toContain('-q:v');
+    expect(hwH264Args('h264_nvenc', 23)).toEqual(expect.arrayContaining(['-cq', '23']));
+    expect(hwH264Args('h264_qsv', 23)).toEqual(expect.arrayContaining(['-global_quality', '23']));
+    expect(hwH264Args('h264_amf', 23)).toContain('cqp');
+    expect(hwH264Args('something-else', 23)).toContain('libx264');
+  });
+
+  it('videoEncodeArgs uses the hardware encoder for mp4/mov/mkv only', () => {
+    const a = videoEncodeArgs('mp4', Q, facts(), 'encode', 'h264_nvenc');
+    expect(a).toContain('h264_nvenc');
+    expect(a).not.toContain('libx264');
+    expect(videoEncodeArgs('mkv', Q, facts(), 'encode', 'h264_nvenc')).toContain('h264_nvenc');
+    expect(videoEncodeArgs('webm', Q, facts(), 'encode', 'h264_nvenc')).not.toContain('h264_nvenc');
+    expect(videoEncodeArgs('mp4', Q, facts())).toContain('libx264');
+  });
+
+  it('videoConvertArgs passes the encoder through', () => {
+    const a = videoConvertArgs('in.webm', 'out.mp4', facts({ videoCodec: 'vp9', audioCodec: 'opus' }), 'mp4', Q, undefined, 'h264_qsv');
+    expect(a).toContain('h264_qsv');
   });
 });

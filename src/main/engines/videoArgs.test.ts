@@ -125,3 +125,14 @@ describe('redactGraph / concat', () => {
     expect(canConcatCopy([facts(), facts({ hasAudio: false })])).toBe(false);
   });
 });
+
+describe('compressPlan with a hardware encoder', () => {
+  it('quality mode uses it, target-size two-pass does not', () => {
+    const quality = compressPlan('i', 'o', facts(), compress(), 'mp4', 'l', 'h264_nvenc');
+    expect(quality[0]).toContain('h264_nvenc');
+    const twoPass = compressPlan('i', 'o', facts(), compress({ targetSizeMb: 10 }), 'mp4', 'l', 'h264_nvenc');
+    expect(twoPass).toHaveLength(2);
+    expect(twoPass[0]).toContain('libx264');
+    expect(compressPlan('i', 'o', facts(), compress({ codec: 'h265' }), 'mp4', 'l', 'h264_nvenc')[0]).toContain('libx265');
+  });
+});
