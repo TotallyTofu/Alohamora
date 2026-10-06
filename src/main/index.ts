@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
+import { detectCapabilities } from './capabilities';
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -18,5 +19,8 @@ function createWindow(): void {
   else void win.loadFile(path.join(__dirname, '../renderer/index.html'));
 }
 
-void app.whenReady().then(createWindow);
+void app.whenReady().then(() => {
+  void detectCapabilities();
+  createWindow();
+});
 app.on('window-all-closed', () => app.quit());
