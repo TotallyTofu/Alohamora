@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { selfCommand } from './loginItem';
 
-const NAUTILUS = path.join(os.homedir(), '.local', 'share', 'nautilus', 'scripts', 'Convert with Kabooks');
-const DOLPHIN = path.join(os.homedir(), '.local', 'share', 'kio', 'servicemenus', 'kabooks.desktop');
+const NAUTILUS = path.join(os.homedir(), '.local', 'share', 'nautilus', 'scripts', 'Convert with Alohamora');
+const DOLPHIN = path.join(os.homedir(), '.local', 'share', 'kio', 'servicemenus', 'alohamora.desktop');
 
 /** Settings → "File manager menu" (reuses settings.contextMenu on Linux). */
 export function setLinuxFileManagerMenus(enabled: boolean): void {
@@ -18,6 +18,6 @@ export function setLinuxFileManagerMenus(enabled: boolean): void {
   fs.mkdirSync(path.dirname(DOLPHIN), { recursive: true });
   fs.writeFileSync(DOLPHIN, [
     '[Desktop Entry]', 'Type=Service', 'MimeType=all/allfiles;', 'Actions=convert;', 'X-KDE-Priority=TopLevel', '',
-    '[Desktop Action convert]', 'Name=Convert with Kabooks', 'Icon=kabooks', `Exec=${cmd} %F`, ''
+    '[Desktop Action convert]', 'Name=Convert with Alohamora', 'Icon=alohamora', `Exec=${cmd} %F`, ''
   ].join('\n'), { mode: 0o755 });
 }

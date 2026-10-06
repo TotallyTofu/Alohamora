@@ -7,4 +7,4 @@ const api: EngineApi = {
   ready: () => ipcRenderer.send(IPC.engineReady)
 };
 
-contextBridge.exposeInMainWorld('kabooksEngine', api);
+contextBridge.exposeInMainWorld('alohamoraEngine', api);

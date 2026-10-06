@@ -18,6 +18,12 @@
   --slice-bottom: #EFEFED;
   --slice-text: #1A1A1A;
   --hub: #FFFFFF;
+  --plate-top: #FBFBF9;
+  --plate-bottom: #D8D8D3;
+  --plate-edge: #C4C4BE;
+  --keyhole: #1E1E20;
+  --key: #8F8F89;
+  --key-halo: rgba(255, 255, 255, .95);
   --success: #1F9D55;
   --danger: #D93025;
   --radius-s: 8px;
@@ -47,6 +53,12 @@
   --slice-bottom: #262629;
   --slice-text: #EDEDED;
   --hub: #2A2A2D;
+  --plate-top: #54545A;
+  --plate-bottom: #2C2C31;
+  --plate-edge: #17171A;
+  --keyhole: #08080A;
+  --key: #C4C4BE;
+  --key-halo: rgba(0, 0, 0, .9);
   --shadow-2: 0 10px 30px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .3);
   --shadow-3: 0 24px 60px rgba(0, 0, 0, .6), 0 4px 12px rgba(0, 0, 0, .35);
   --inset-hub: inset 0 2px 6px rgba(0, 0, 0, .5);

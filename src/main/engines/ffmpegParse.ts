@@ -67,7 +67,7 @@ export function friendlyFfmpegError(stderr: string): string {
   const s = stderr.toLowerCase();
   if (s.includes('invalid data found when processing input') || s.includes('moov atom not found')) return 'This file looks damaged, or it is not really the format its name says.';
   if (s.includes('matches no streams') || s.includes('does not contain any stream')) return 'This file has no usable audio or video for this action.';
-  if (s.includes('permission denied')) return "Kabooks can't read or write this file. Close it in other apps and try again.";
+  if (s.includes('permission denied')) return "Alohamora can't read or write this file. Close it in other apps and try again.";
   if (s.includes('no space left')) return 'The disk is full.';
   if (s.includes('unknown encoder') || s.includes('encoder not found')) return 'This FFmpeg build is missing an encoder needed for this format.';
   if (s.includes('not divisible by 2')) return 'The encoder needs an even width and height.';

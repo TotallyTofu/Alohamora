@@ -14,10 +14,10 @@ export function throwIfAborted(signal: AbortSignal): void {
 
 /** Appendix C wording for operating-system errors (locked, read-only or full disk). */
 const OS_ERRORS: Record<string, string> = {
-  EPERM: "Kabooks can't read or write this file. Close it in other apps and try again.",
-  EACCES: "Kabooks can't read or write this file. Close it in other apps and try again.",
-  EBUSY: "Kabooks can't read or write this file. Close it in other apps and try again.",
-  EROFS: "Kabooks can't read or write this file. Close it in other apps and try again.",
+  EPERM: "Alohamora can't read or write this file. Close it in other apps and try again.",
+  EACCES: "Alohamora can't read or write this file. Close it in other apps and try again.",
+  EBUSY: "Alohamora can't read or write this file. Close it in other apps and try again.",
+  EROFS: "Alohamora can't read or write this file. Close it in other apps and try again.",
   ENOSPC: 'The disk is full.'
 };
 

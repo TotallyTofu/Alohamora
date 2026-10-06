@@ -29,7 +29,7 @@ export const PDF_CASES: SelfTestCase[] = [
     request: (i) => ({ kind: 'convert', inputs: i, target: 'txt' }),
     check: async (o) => {
       expectCount(o, 1);
-      expectTextIncludes(o[0], 'Kabooks Test Document');
+      expectTextIncludes(o[0], 'Alohamora Test Document');
       expectTextIncludes(o[0], 'First item');
       const lines = fs.readFileSync(o[0], 'utf8').split('\n').map((l) => l.trim());
       check(!lines.includes('2'), 'page number "2" should have been removed');
@@ -42,7 +42,7 @@ export const PDF_CASES: SelfTestCase[] = [
       expectCount(o, 1);
       const zip = await expectZipEntries(o[0], ['word/document.xml']);
       const xml = await zip.file('word/document.xml')!.async('string');
-      check(xml.includes('Kabooks Test Document'), 'DOCX should contain the title text');
+      check(xml.includes('Alohamora Test Document'), 'DOCX should contain the title text');
       check(xml.includes('Heading1'), 'DOCX should use the Heading1 style');
     }
   },
@@ -83,7 +83,7 @@ export const PDF_CASES: SelfTestCase[] = [
     check: async (o) => {
       expectCount(o, 1);
       const text = fs.readFileSync(o[0], 'utf8').toUpperCase();
-      check(text.includes('KABOOKS'), `OCR text should contain KABOOKS, got: ${text.slice(0, 80)}`);
+      check(text.includes('ALOHAMORA'), `OCR text should contain ALOHAMORA, got: ${text.slice(0, 80)}`);
       check(text.includes('OCR'), 'OCR text should contain OCR');
     }
   },

@@ -85,6 +85,7 @@ export interface Settings {
   launchAtLogin: boolean;
   closeToTray: boolean;      // Windows/Linux tray · macOS menu bar
   showInDock: boolean;       // macOS only
+  sounds: boolean;           // key-turn sound when moving over the wheel, lock click when choosing
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -106,7 +107,8 @@ export const DEFAULT_SETTINGS: Settings = {
   contextMenu: false,
   launchAtLogin: false,
   closeToTray: true,
-  showInDock: true
+  showInDock: true,
+  sounds: true
 };
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'error' | 'canceled';

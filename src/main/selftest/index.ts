@@ -16,12 +16,16 @@ function describeError(e: unknown): string {
     const tail = (e.details ?? '').split('\n').filter(Boolean).slice(-3).join(' / ');
     return tail ? `${e.message} | ${tail}` : e.message;
   }
-  return e instanceof Error ? e.message : String(e);
+  if (e instanceof Error) {
+    const where = (e.stack ?? '').split('\n').slice(1, 4).map((l) => l.trim().replace(/\(.*[\\/]/, '(')).join(' / ');
+    return where ? `${e.message} | ${where}` : e.message;     // unexpected errors keep their first stack frames in the report
+  }
+  return String(e);
 }
 
 export async function runSelfTest(argv: string[]): Promise<number> {
   const only = argv.find((a) => a.startsWith('--only='))?.slice('--only='.length);
-  const root = app.isPackaged ? path.join(app.getPath('temp'), 'kabooks-selftest') : path.join(app.getAppPath(), '.selftest');
+  const root = app.isPackaged ? path.join(app.getPath('temp'), 'alohamora-selftest') : path.join(app.getAppPath(), '.selftest');
   const fxDir = path.join(root, 'fixtures');
   const outRoot = path.join(root, 'out');
   await fs.promises.rm(outRoot, { recursive: true, force: true });

@@ -1,4 +1,4 @@
-# Kabooks
+# Alohamora
 
 An offline file converter for **Windows, macOS and Linux** with a spinning-wheel interface. Drop a file, pick a slice, and the
 result is saved next to the original. Nothing is uploaded; there is no account, telemetry or auto-update.
@@ -36,7 +36,7 @@ HEIC *input* works everywhere. HEIC *output* needs an encoder, which patents kee
 
 - **macOS:** built in (`sips`), nothing to do.
 - **Windows:** download a Windows build of libheif that includes `heif-enc.exe`, and copy `heif-enc.exe` **and every `.dll`
-  next to it** into `resources/bin/win32-x64/heif/`. Restart Kabooks. The *Formats* tab shows HEIC struck through until then.
+  next to it** into `resources/bin/win32-x64/heif/`. Restart Alohamora. The *Formats* tab shows HEIC struck through until then.
 - **Linux:** `sudo apt install libheif-examples` (Debian/Ubuntu) or `sudo dnf install libheif-tools` (Fedora).
 
 ## Packaging
@@ -49,7 +49,7 @@ npm run dist:mac      # DMG + ZIP (set CSC_IDENTITY_AUTO_DISCOVERY=false for an 
 npm run dist:linux    # AppImage + .deb
 ```
 
-A packaged app can test itself: run `Kabooks.exe --selftest` and read `<temp>/kabooks-selftest/report.json`.
+A packaged app can test itself: run `Alohamora.exe --selftest` and read `<temp>/alohamora-selftest/report.json`.
 `.github/workflows/build.yml` builds and self-tests all platforms. Unsigned builds show one OS warning on first launch
 (SmartScreen, Gatekeeper); see PLAN.md Task 13.6 for signing and notarization.
 
@@ -65,4 +65,4 @@ Troubleshooting tips are in `PLAN.md` Appendix D.
 
 ## Licences
 
-See `THIRD_PARTY_NOTICES.md`. The bundled FFmpeg builds are GPL; read that file before distributing Kabooks.
+See `THIRD_PARTY_NOTICES.md`. The bundled FFmpeg builds are GPL; read that file before distributing Alohamora.

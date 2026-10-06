@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import { IPC, type KabooksApi } from '@shared/ipc';
+import { IPC, type AlohamoraApi } from '@shared/ipc';
 
 function on<T>(channel: string, cb: (payload: T) => void): () => void {
   const listener = (_e: Electron.IpcRendererEvent, payload: T): void => cb(payload);
@@ -7,7 +7,7 @@ function on<T>(channel: string, cb: (payload: T) => void): () => void {
   return () => { ipcRenderer.removeListener(channel, listener); };
 }
 
-const api: KabooksApi = {
+const api: AlohamoraApi = {
   getPathForFile: (file) => webUtils.getPathForFile(file),
   getCapabilities: () => ipcRenderer.invoke(IPC.getCapabilities),
   getSettings: () => ipcRenderer.invoke(IPC.getSettings),
@@ -39,4 +39,4 @@ const api: KabooksApi = {
   onNavigate: (cb) => on(IPC.evNavigate, cb)
 };
 
-contextBridge.exposeInMainWorld('kabooks', api);
+contextBridge.exposeInMainWorld('alohamora', api);

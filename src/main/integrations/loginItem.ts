@@ -1,4 +1,4 @@
-// loginItem.ts — Windows/macOS: OS login items · Linux: ~/.config/autostart/kabooks.desktop
+// loginItem.ts — Windows/macOS: OS login items · Linux: ~/.config/autostart/alohamora.desktop
 import { app } from 'electron';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -16,9 +16,9 @@ export function setLoginItem(enabled: boolean): void {
     app.setLoginItemSettings({ openAtLogin: enabled, args: app.isPackaged ? ['--hidden'] : [app.getAppPath(), '--hidden'] });
     return;
   }
-  const file = path.join(os.homedir(), '.config', 'autostart', 'kabooks.desktop');
+  const file = path.join(os.homedir(), '.config', 'autostart', 'alohamora.desktop');
   if (!enabled) { fs.rmSync(file, { force: true }); return; }
   const exec = [...selfCommand(), '--hidden'].map((p) => `"${p}"`).join(' ');
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `[Desktop Entry]\nType=Application\nName=Kabooks\nExec=${exec}\nX-GNOME-Autostart-enabled=true\nNoDisplay=false\n`);
+  fs.writeFileSync(file, `[Desktop Entry]\nType=Application\nName=Alohamora\nExec=${exec}\nX-GNOME-Autostart-enabled=true\nNoDisplay=false\n`);
 }

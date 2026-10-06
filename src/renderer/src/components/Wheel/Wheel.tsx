@@ -1,6 +1,7 @@
 import type { WheelItem } from '@shared/wheelItems';
 import { useRef } from 'react';
 import { Icon } from '../Icon';
+import { KeyLock } from './KeyLock';
 import { DEFAULT_GEOMETRY as G, hitTest, labelPoint, sliceOffset, slicePath } from './wheelGeometry';
 import './wheel.css';
 
@@ -11,7 +12,8 @@ export interface WheelProps {
   onPick?: (i: number, withOptions: boolean) => void;
   hubLabel?: string;
   thumbnail?: string;
-  hubIcon?: string;
+  /** Bump this number each time a choice is made: the key in the centre gives a twist. */
+  pickToken?: number;
   demo?: boolean;                                                     // non-interactive (home page)
   onDropFiles?: (dt: DataTransfer, hit: number | 'center' | null) => void;   // global-drag mode
   onDragTypes?: (dt: DataTransfer) => void;                           // global-drag mode: read MIME types
@@ -20,6 +22,7 @@ export interface WheelProps {
 export function Wheel(p: WheelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const n = p.items.length;
+  const hubSize = (G.rInner - 6) * 2;
 
   const hit = (clientX: number, clientY: number): number | 'center' | null => {
     const el = ref.current;
@@ -82,9 +85,10 @@ export function Wheel(p: WheelProps) {
           </div>
         );
       })}
-      <div className="wheel__hub" style={{ width: (G.rInner - 6) * 2, height: (G.rInner - 6) * 2 }}>
-        {p.thumbnail ? <img className="wheel__thumb" src={p.thumbnail} alt="" /> : p.hubIcon ? <Icon name={p.hubIcon} size={28} /> : null}
-        {p.hubLabel && <span className="wheel__pill">{p.hubLabel}</span>}
+      <div className="wheel__hub" style={{ width: hubSize, height: hubSize }}>
+        {p.thumbnail && <img className="wheel__thumb" src={p.thumbnail} alt="" />}
+        <KeyLock angle={p.active !== null && n > 0 ? (p.active * 360) / n : null} turnToken={p.pickToken ?? 0} size={hubSize} />
+        {p.hubLabel && <span className="sr-only">{p.hubLabel}</span>}
       </div>
     </div>
   );

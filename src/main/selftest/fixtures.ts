@@ -9,6 +9,7 @@ import { buildFixedEpub, buildReflowEpub } from '../engines/epubWriter';
 import { encodeHeicFile } from '../engines/heif';
 import { htmlFileToPdf } from '../engines/print';
 import { pdfRenderPage, withPdf } from '../engines/pdfEngine';
+import { ownBytes } from '../engines/bytes';
 
 type Maker = (out: string, dir: string) => Promise<void>;
 
@@ -54,7 +55,7 @@ export const FIXTURES: Record<string, Maker> = {
   'image.heic': async (out, dir) => { await encodeHeicFile(await ensureFixture(dir, 'image.png'), out, 80); },
   'text.txt': async (out) => {
     await fs.promises.writeFile(out, [
-      'Kabooks test document',
+      'Alohamora test document',
       'Xin chào thế giới — Tiếng Việt có dấu.',
       'The quick brown fox jumps over the lazy dog. '.repeat(4).trim(),
       '',
@@ -69,14 +70,14 @@ export const FIXTURES: Record<string, Maker> = {
   },
   'doc.pdf': async (out, dir) => {
     const pdf = await PDFDocument.create();
-    pdf.setTitle('Kabooks Test');
+    pdf.setTitle('Alohamora Test');
     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
     const reg = await pdf.embedFont(StandardFonts.Helvetica);
-    const jpg = await pdf.embedJpg(await sharp(await ensureFixture(dir, 'image.png')).flatten({ background: '#fff' }).jpeg().toBuffer());
-    const para = 'Kabooks converts files offline. This paragraph is long enough to wrap across several lines so that the reflow logic has something to join back together into one paragraph.';
+    const jpg = await pdf.embedJpg(ownBytes(await sharp(await ensureFixture(dir, 'image.png')).flatten({ background: '#fff' }).jpeg().toBuffer()));
+    const para = 'Alohamora converts files offline. This paragraph is long enough to wrap across several lines so that the reflow logic has something to join back together into one paragraph.';
     for (let p = 1; p <= 3; p++) {
       const page = pdf.addPage([612, 792]);
-      page.drawText(p === 1 ? 'Kabooks Test Document' : `Chapter ${p}`, { x: 72, y: 700, size: 24, font: bold });
+      page.drawText(p === 1 ? 'Alohamora Test Document' : `Chapter ${p}`, { x: 72, y: 700, size: 24, font: bold });
       const words = para.split(' ');
       let line = '';
       let y = 660;
@@ -93,7 +94,7 @@ export const FIXTURES: Record<string, Maker> = {
   },
   'book.epub': async (out) => {
     await fs.promises.writeFile(out, await buildReflowEpub({ title: 'Test Book', lang: 'en' }, [
-      { title: 'Chapter One', bodyXhtml: '<h1>Chapter One</h1><p>Kabooks converts files offline. Xin chào thế giới.</p>' },
+      { title: 'Chapter One', bodyXhtml: '<h1>Chapter One</h1><p>Alohamora converts files offline. Xin chào thế giới.</p>' },
       { title: 'Chapter Two', bodyXhtml: '<h1>Chapter Two</h1><p>Second chapter text.</p><ul><li>One</li><li>Two</li></ul>' }
     ]));
   },
@@ -106,7 +107,7 @@ export const FIXTURES: Record<string, Maker> = {
   'doc-copy.pdf': async (out, dir) => { await fs.promises.copyFile(await ensureFixture(dir, 'doc.pdf'), out); },
   'scan.pdf': async (out, dir) => {
     const html = path.join(dir, 'tmp-scan.html');
-    await fs.promises.writeFile(html, textToHtml('KABOOKS OCR TEST\n\nHello offline world.', { title: 'scan', font: 'sans', sizePt: 28, pageSize: 'a4' }), 'utf8');
+    await fs.promises.writeFile(html, textToHtml('ALOHAMORA OCR TEST\n\nHello offline world.', { title: 'scan', font: 'sans', sizePt: 28, pageSize: 'a4' }), 'utf8');
     const textPdf = path.join(dir, 'tmp-scan-src.pdf');
     await fs.promises.writeFile(textPdf, await htmlFileToPdf(html));
     const png = await withPdf(textPdf, (doc) => pdfRenderPage(doc.id, 0, { dpi: 200, mime: 'image/png' }));

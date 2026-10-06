@@ -25,7 +25,7 @@ export async function loadImage(file: Pick<FileInfo, 'path' | 'fmt'>, opts: { de
     await img.metadata();                                        // reads the header now, so unreadable files fail here with a clear message
     return img;
   } catch (e) {
-    throw new UserError("Kabooks couldn't read this image. It may be damaged.", (e as Error).message);
+    throw new UserError("Alohamora couldn't read this image. It may be damaged.", (e as Error).message);
   }
 }
 
@@ -62,7 +62,7 @@ export async function materialize(img: Sharp): Promise<Sharp> {
   return sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels } });
 }
 
-/** Tools keep the input format when Kabooks can write it. */
+/** Tools keep the input format when Alohamora can write it. */
 export function sameImageFmt(fmt: Fmt | null, heifEnc: boolean): 'jpg' | 'png' | 'webp' | 'avif' | 'tiff' | 'bmp' | 'heic' {
   if (fmt === 'jpg' || fmt === 'png' || fmt === 'webp' || fmt === 'avif' || fmt === 'tiff' || fmt === 'bmp') return fmt;
   if (fmt === 'heic') return heifEnc ? 'heic' : 'jpg';

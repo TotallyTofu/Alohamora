@@ -48,7 +48,7 @@ export const PDF_TOOL_CASES: SelfTestCase[] = [
   toolCase('compress-max', ['doc.pdf'], 'pdf.compress', { level: 'max' }, async (o) => { expectCount(o, 1); await expectPdfPages(o[0], 3); }),
   toolCase('ocr-txt', ['scan.pdf'], 'pdf.ocr', { languages: ['eng'], output: 'txt' }, async (o) => {
     expectCount(o, 1);
-    check(fs.readFileSync(o[0], 'utf8').toUpperCase().includes('KABOOKS'), 'OCR text should contain KABOOKS');
+    check(fs.readFileSync(o[0], 'utf8').toUpperCase().includes('ALOHAMORA'), 'OCR text should contain ALOHAMORA');
   }, NO_OCR),
   toolCase('ocr-pdf', ['scan.pdf'], 'pdf.ocr', { languages: ['eng'], output: 'pdf' }, async (o) => { expectCount(o, 1); await expectPdfPages(o[0], 1); }, NO_OCR),
   toolCase('word', ['doc.pdf'], 'pdf.word', {}, async (o) => { expectCount(o, 1); await expectZipEntries(o[0], ['word/document.xml']); }),

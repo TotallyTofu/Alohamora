@@ -13,7 +13,7 @@ export async function imagesToDocx(images: EmbeddableImage[]): Promise<Buffer> {
     }));
     if (i < images.length - 1) children.push(new Paragraph({ children: [new PageBreak()] }));
   });
-  return Packer.toBuffer(new Document({ creator: 'Kabooks', sections: [{ children }] }));
+  return Packer.toBuffer(new Document({ creator: 'Alohamora', sections: [{ children }] }));
 }
 
 // docxWriter.ts additions
@@ -29,7 +29,7 @@ export async function blocksToDocx(blocks: Block[], title: string): Promise<Buff
     else if (b.type === 'li') children.push(new Paragraph({ bullet: { level: 0 }, children: runs }));
     else children.push(new Paragraph({ children: runs, spacing: { after: 160 } }));
   }
-  return Packer.toBuffer(new Document({ creator: 'Kabooks', title, sections: [{ children }] }));
+  return Packer.toBuffer(new Document({ creator: 'Alohamora', title, sections: [{ children }] }));
 }
 
 /** "Exact look": each PDF page becomes a full-page picture in its own section. */
@@ -46,5 +46,5 @@ export async function pageImagesToDocx(pages: Array<{ jpeg: Buffer; widthPt: num
       } })]
     })]
   }));
-  return Packer.toBuffer(new Document({ creator: 'Kabooks', sections }));
+  return Packer.toBuffer(new Document({ creator: 'Alohamora', sections }));
 }

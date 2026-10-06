@@ -15,7 +15,7 @@ const textOf = (b: Block): string => (b.type === 'pagebreak' ? '' : runsText(b.r
 describe('reflowPages', () => {
   it('detects a title, paragraphs and a bullet; drops the page number', () => {
     const blocks = reflowPages([page([
-      item('Kabooks Test Document', 72, 80, 24, true),
+      item('Alohamora Test Document', 72, 80, 24, true),
       item('Body text on the first line of the paragraph and', 72, 120),
       item('continues here and then ends.', 72, 135),
       item('A second paragraph starts here and is long enough to be the widest line on this page.', 72, 180),

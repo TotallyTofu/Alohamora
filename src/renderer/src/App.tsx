@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Logo } from './components/Logo';
 import { api } from './lib/api';
 import { FormatsView } from './views/FormatsView';
 import { HomeView } from './views/HomeView';
@@ -16,7 +17,7 @@ export function App() {
   return (
     <div className="app">
       <header className="titlebar">
-        <div className="brand"><span className="brand__logo" aria-hidden="true" />Kabooks</div>
+        <div className="brand"><Logo size={26} />Alohamora</div>
         <nav className="tabs" aria-label="Sections">
           {TABS.map((t) => (
             <button key={t.id} type="button" className={`tab${tab === t.id ? ' is-on' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>

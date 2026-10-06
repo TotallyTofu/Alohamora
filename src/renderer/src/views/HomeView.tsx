@@ -26,7 +26,7 @@ function useCycle(n: number, ms: number, start: number): number {
 function DemoWheel({ items, active, label }: { items: WheelItem[]; active: number; label: string }) {
   return (
     <div className="hint-wheel" aria-hidden="true">
-      <Wheel demo items={items} active={active} hubLabel={label} hubIcon="video" />
+      <Wheel demo items={items} active={active} hubLabel={label} />
     </div>
   );
 }

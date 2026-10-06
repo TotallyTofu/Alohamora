@@ -3,6 +3,7 @@ import { degrees, PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 import type { FileInfo } from '@shared/types';
 import { throwIfAborted, UserError } from '../errors';
+import { ownBytes } from './bytes';
 import { loadImage } from './image';
 
 export type PageSizeOpt = 'fit' | 'a4' | 'letter';
@@ -37,7 +38,7 @@ export async function imagesToPdf(
   for (let i = 0; i < files.length; i++) {
     throwIfAborted(signal);
     const img = await embeddableImage(files[i]);
-    const emb = img.kind === 'jpg' ? await pdf.embedJpg(img.data) : await pdf.embedPng(img.data);
+    const emb = img.kind === 'jpg' ? await pdf.embedJpg(ownBytes(img.data)) : await pdf.embedPng(ownBytes(img.data));
     let pw: number;
     let ph: number;
     if (o.pageSize === 'fit') {
@@ -98,7 +99,7 @@ export async function organizePdf(src: PDFDocument, pages: Array<{ src: number; 
 export async function pageImagesToPdf(pages: Array<{ jpeg: Buffer; widthPt: number; heightPt: number }>): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   for (const p of pages) {
-    const img = await doc.embedJpg(p.jpeg);
+    const img = await doc.embedJpg(ownBytes(p.jpeg));
     doc.addPage([p.widthPt, p.heightPt]).drawImage(img, { x: 0, y: 0, width: p.widthPt, height: p.heightPt });
   }
   return doc.save({ useObjectStreams: true });

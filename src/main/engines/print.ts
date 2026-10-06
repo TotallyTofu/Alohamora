@@ -4,7 +4,7 @@ import { blockNetwork } from '../security';
 let printSession: Session | null = null;
 function getPrintSession(): Session {
   if (!printSession) {
-    printSession = session.fromPartition('kabooks-print');
+    printSession = session.fromPartition('alohamora-print');
     blockNetwork(printSession);
   }
   return printSession;

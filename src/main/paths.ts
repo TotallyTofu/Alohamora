@@ -22,7 +22,7 @@ export const ffmpegPath = (): string => path.join(binDir(), exeName('ffmpeg'));
 export const ffprobePath = (): string => path.join(binDir(), exeName('ffprobe'));
 /** Bundled heif-enc (Windows). Linux uses the system one on PATH; macOS uses sips (see capabilities.ts). */
 export const heifEncPath = (): string => path.join(binDir(), 'heif', exeName('heif-enc'));
-export const macDragHelperPath = (): string => path.join(binDir(), 'kabooks-drag-helper');
+export const macDragHelperPath = (): string => path.join(binDir(), 'alohamora-drag-helper');
 export const tessdataDir = (): string => path.join(resourcesRoot(), 'tessdata');
 /** macOS uses a black "template" image so the menu bar can tint it; Windows/Linux use the coloured icon. */
 export const trayIconPath = (): string => path.join(resourcesRoot(), isMac ? 'trayTemplate.png' : 'tray.png');
@@ -49,7 +49,7 @@ export function userDir(...parts: string[]): string {
 export const cacheDir = (...parts: string[]): string => userDir('cache', ...parts);
 
 export function jobsTempRoot(): string {
-  const p = path.join(app.getPath('temp'), 'kabooks-jobs');
+  const p = path.join(app.getPath('temp'), 'alohamora-jobs');
   fs.mkdirSync(p, { recursive: true });
   return p;
 }
@@ -60,5 +60,5 @@ export const rendererDir = (): string => path.join(__dirname, '../renderer');
 export function rendererUrl(page: 'index' | 'engine', query = ''): string {
   const dev = process.env['ELECTRON_RENDERER_URL'];
   if (!app.isPackaged && dev) return `${dev}/${page}.html${query}`;
-  return `app://kabooks/${page}.html${query}`;
+  return `app://alohamora/${page}.html${query}`;
 }

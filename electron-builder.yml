@@ -1,6 +1,6 @@
-appId: com.kabooks.app
-productName: Kabooks
-copyright: Copyright © 2026 Kabooks contributors
+appId: com.alohamora.app
+productName: Alohamora
+copyright: Copyright © 2026 Alohamora contributors
 directories:
   output: dist
   buildResources: build
@@ -76,7 +76,7 @@ mac:
       to: trayTemplate.png
     - from: resources/trayTemplate@2x.png
       to: trayTemplate@2x.png
-  fileAssociations:        # Finder "Open With → Kabooks" without stealing the default app
+  fileAssociations:        # Finder "Open With → Alohamora" without stealing the default app
     - { ext: [jpg, jpeg, png, webp, heic, heif, tif, tiff, svg, avif, bmp], name: Image, role: Viewer, rank: Alternate }
     - { ext: [mp3, m4a, wav, flac, ogg, opus, aiff, aif, wma], name: Audio, role: Viewer, rank: Alternate }
     - { ext: [mp4, m4v, mov, mkv, webm, avi, wmv, gif], name: Video, role: Viewer, rank: Alternate }
@@ -90,7 +90,7 @@ dmg:
 linux:
   icon: build/icon.png
   category: Utility
-  executableName: kabooks
+  executableName: alohamora
   synopsis: Offline file converter
   target: [AppImage, deb]
   extraResources:
@@ -98,7 +98,7 @@ linux:
       to: bin
     - from: resources/tray.png
       to: tray.png
-  mimeTypes:               # "Open With → Kabooks" in GNOME/KDE (not default)
+  mimeTypes:               # "Open With → Alohamora" in GNOME/KDE (not default)
     - image/jpeg
     - image/png
     - image/webp

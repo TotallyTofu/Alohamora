@@ -19,7 +19,7 @@ function chromeOptions(): BrowserWindowConstructorOptions {
 
 export function createMainWindow(showNow = true): BrowserWindow {
   win = new BrowserWindow({
-    width: 1000, height: 720, minWidth: 760, minHeight: 560, show: false, title: 'Kabooks',
+    width: 1000, height: 720, minWidth: 760, minHeight: 560, show: false, title: 'Alohamora',
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#161617' : '#F3F3F2',
     ...chromeOptions(),
     webPreferences: { preload: preloadPath('index'), sandbox: true, contextIsolation: true }

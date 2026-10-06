@@ -17,13 +17,21 @@ function slice(i, n, ro, ri, gapDeg) {
 const n = 8;
 const slices = Array.from({ length: n }, (_, i) =>
   `<path d="${slice(i, n, 226, 96, 2.2)}" fill="${i === 3 ? '#FF5A1F' : '#FBFBFA'}"/>`).join('');
+// The hub is a lock: a white plate with a keyhole (round head + tapered slot), centred on the wheel.
+const keyhole = (fill, s = 1) => {
+  const c = 256;
+  const p = (dx, dy) => `${c + dx * s} ${c + dy * s}`;
+  return `<g fill="${fill}"><circle cx="${c}" cy="${c + -23 * s}" r="${25 * s}"/>`
+    + `<path d="M${p(-15, -9)} L${p(15, -9)} L${p(29, 48)} L${p(-29, 48)} Z"/></g>`;
+};
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">`
-  + `<circle cx="256" cy="256" r="252" fill="#E2E2E0"/>${slices}<circle cx="256" cy="256" r="78" fill="#FFFFFF"/></svg>`;
+  + `<circle cx="256" cy="256" r="252" fill="#E2E2E0"/>${slices}`
+  + `<circle cx="256" cy="256" r="78" fill="#FFFFFF" stroke="#DADAD6" stroke-width="4"/>${keyhole('#1F1F1F')}</svg>`;
 
 // macOS menu-bar "template" glyph: black shapes + alpha only (the system tints it for light/dark menu bars).
 const glyphSlices = Array.from({ length: n }, (_, i) =>
   `<path d="${slice(i, n, 240, 110, 4)}" fill="#000" fill-opacity="${i === 3 ? 1 : 0.55}"/>`).join('');
-const glyph = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">${glyphSlices}</svg>`;
+const glyph = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">${glyphSlices}${keyhole('#000', 1.3)}</svg>`;
 
 fs.mkdirSync(path.join(root, 'build'), { recursive: true });
 fs.mkdirSync(path.join(root, 'resources'), { recursive: true });

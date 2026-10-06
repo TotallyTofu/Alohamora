@@ -14,7 +14,7 @@ export function createOverlayWindow(): BrowserWindow {
   win = new BrowserWindow({
     width: WHEEL_STAGE.width, height: WHEEL_STAGE.height, show: false, frame: false, transparent: true,
     resizable: false, movable: false, minimizable: false, maximizable: false, fullscreenable: false,
-    skipTaskbar: true, alwaysOnTop: true, hasShadow: false, backgroundColor: '#00000000', title: 'Kabooks',
+    skipTaskbar: true, alwaysOnTop: true, hasShadow: false, backgroundColor: '#00000000', title: 'Alohamora',
     webPreferences: { preload: preloadPath('index'), sandbox: true, contextIsolation: true, backgroundThrottling: false }
   });
   win.setAlwaysOnTop(true, 'pop-up-menu');

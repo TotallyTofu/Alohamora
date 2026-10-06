@@ -11,11 +11,11 @@ export function createTray(): void {
   const image = nativeImage.createFromPath(trayIconPath());      // macOS picks trayTemplate@2x.png automatically
   if (isMac) image.setTemplateImage(true);
   tray = new Tray(image);
-  tray.setToolTip('Kabooks — drop files to convert');
+  tray.setToolTip('Alohamora — drop files to convert');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open Kabooks', click: () => showMainWindow() },
+    { label: 'Open Alohamora', click: () => showMainWindow() },
     { type: 'separator' },
-    { label: 'Quit Kabooks', click: () => app.quit() }
+    { label: 'Quit Alohamora', click: () => app.quit() }
   ]));
   if (!isMac) tray.on('click', () => showMainWindow());          // macOS: click opens the menu (convention)
   setTrayActive(true);

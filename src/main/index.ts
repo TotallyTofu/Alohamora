@@ -15,6 +15,7 @@ import { getSettings, loadSettings, onSettingsChanged } from './settings';
 import { filesFromArgv, queueFiles } from './integrations/argv';
 import { installAppMenu } from './integrations/appMenu';
 import { applyIntegrations } from './integrations';
+import { migrateFromKabooks } from './integrations/legacy';
 import { createTray } from './integrations/tray';
 import { startEngine } from './windows/engineWindow';
 import { createMainWindow, showMainWindow } from './windows/mainWindow';
@@ -22,7 +23,7 @@ import { createOverlayWindow, openOverlay } from './windows/overlayWindow';
 import { runSelfTest } from './selftest';
 
 sharp.cache(false);                         // avoid file locks (Windows) and stale reads
-if (process.platform === 'win32') app.setAppUserModelId('com.kabooks.app');           // Windows notifications
+if (process.platform === 'win32') app.setAppUserModelId('com.alohamora.app');           // Windows notifications
 if (process.platform === 'linux') app.commandLine.appendSwitch('enable-transparent-visuals');  // transparent overlay
 registerSchemes();                          // must run before 'ready'
 
@@ -32,7 +33,7 @@ let launchedWithFiles = false;
 /** Files handed to us by the OS open the wheel as soon as the app has finished starting. */
 const openFromOs = (paths: string[]): void => { void started.then(() => openOverlay(paths, 'convert', 'argv')); };
 
-// macOS: Finder "Open With", Dock drop, `open -a Kabooks file` (can fire before 'ready')
+// macOS: Finder "Open With", Dock drop, `open -a Alohamora file` (can fire before 'ready')
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
   launchedWithFiles = true;
@@ -56,6 +57,7 @@ if (!process.argv.includes('--selftest') && !app.requestSingleInstanceLock()) {
     registerProtocolHandlers();
     blockNetwork();
     hardenWebContents();
+    await migrateFromKabooks();                 // renamed from Kabooks: keep the user's settings
     const settings = loadSettings();
     nativeTheme.themeSource = settings.theme;
     await detectCapabilities();
@@ -81,6 +83,6 @@ if (!process.argv.includes('--selftest') && !app.requestSingleInstanceLock()) {
     void detectHardwareVideo();                 // background: 1-frame test encodes, never blocks start-up
     void runHousekeeping();
     queueFiles(initial, openFromOs);
-    log.info('Kabooks ready');
+    log.info('Alohamora ready');
   });
 }

@@ -1,6 +1,6 @@
-import type { KabooksApi } from '../shared/ipc';
+import type { AlohamoraApi } from '../shared/ipc';
 
 declare global {
-  interface Window { kabooks: KabooksApi }
+  interface Window { alohamora: AlohamoraApi }
 }
 export {};

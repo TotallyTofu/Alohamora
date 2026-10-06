@@ -1,10 +1,10 @@
 {
-  "name": "kabooks",
-  "productName": "Kabooks",
+  "name": "alohamora",
+  "productName": "Alohamora",
   "version": "0.1.0",
   "description": "Offline file converter with a spinning wheel UI",
   "main": "./out/main/index.js",
-  "author": "Kabooks contributors",
+  "author": "Alohamora contributors",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {

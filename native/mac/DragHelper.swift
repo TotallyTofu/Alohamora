@@ -1,5 +1,5 @@
-// kabooks-drag-helper — prints JSON lines describing global file drags + modifier keys.
-// Build: swiftc -O -target arm64-apple-macos12 -o kabooks-drag-helper DragHelper.swift  (x86_64 for Intel)
+// alohamora-drag-helper — prints JSON lines describing global file drags + modifier keys.
+// Build: swiftc -O -target arm64-apple-macos12 -o alohamora-drag-helper DragHelper.swift  (x86_64 for Intel)
 import AppKit
 import Foundation
 

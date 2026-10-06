@@ -1,3 +1,3 @@
-import type { KabooksApi } from '@shared/ipc';
+import type { AlohamoraApi } from '@shared/ipc';
 
-export const api: KabooksApi = window.kabooks;
+export const api: AlohamoraApi = window.alohamora;

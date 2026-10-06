@@ -1,17 +1,24 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { categoryOf } from '@shared/formats';
 import type { FileInfo } from '@shared/types';
 import { buildWheel, type WheelItem, type WheelModel } from '@shared/wheelItems';
-import { CATEGORY_ICON } from '../../components/Icon';
 import { Wheel } from '../../components/Wheel/Wheel';
 import { api } from '../../lib/api';
 import { fmtsFromDragTypes, pathsFromDataTransfer } from '../../lib/dnd';
+import { playClick, playTurn } from '../../lib/sound';
 import { useOverlay } from '../store';
 
 const EMPTY: WheelModel = { items: [], category: null, mixed: false };
+/** After a choice, let the key finish its twist and the click be heard before the next card appears. */
+const FEEDBACK_MS = 130;
 
 export function WheelStage() {
   const { files, mode, caps, active, dragging, dragFmts, setActive, setMode, go, setDragFmts, dropFinished } = useOverlay();
+
+  const [turn, setTurn] = useState(0);
+
+  // The key turns (with its sound) whenever the highlight lands on a different choice.
+  useEffect(() => { if (active !== null) playTurn(); }, [active]);
 
   const model = useMemo<WheelModel>(() => {
     if (!caps) return EMPTY;
@@ -28,19 +35,23 @@ export function WheelStage() {
 
   /** Start the job / open the card for `item` using `inputs` (explicit so a drop can use the freshly resolved files). */
   const run = async (inputs: FileInfo[], item: WheelItem, withOptions: boolean): Promise<void> => {
+    setTurn((t) => t + 1);          // the key twists …
+    playClick();                    // … and the lock clicks
+    const settle = new Promise<void>((resolve) => { setTimeout(resolve, FEEDBACK_MS); });
     const paths = inputs.map((f) => f.path);
     if (item.kind === 'tool' && item.toolId) {
       if (!item.needsOptions && !withOptions) {
-        const jobId = await api.startJob({ kind: 'tool', inputs: paths, toolId: item.toolId, options: {} });
+        const [jobId] = await Promise.all([api.startJob({ kind: 'tool', inputs: paths, toolId: item.toolId, options: {} }), settle]);
         go({ name: 'running', jobId });
       } else {
+        await settle;
         go({ name: 'panel', toolId: item.toolId });
       }
       return;
     }
     if (!item.target) return;
-    if (item.needsOptions || withOptions) { go({ name: 'options', target: item.target }); return; }
-    const jobId = await api.startJob({ kind: 'convert', inputs: paths, target: item.target });
+    if (item.needsOptions || withOptions) { await settle; go({ name: 'options', target: item.target }); return; }
+    const [jobId] = await Promise.all([api.startJob({ kind: 'convert', inputs: paths, target: item.target }), settle]);
     go({ name: 'running', jobId });
   };
   const pick = async (i: number, withOptions: boolean): Promise<void> => {
@@ -91,8 +102,8 @@ export function WheelStage() {
 
   return (
     <div className="stage-wheel">
-      <Wheel items={model.items} active={active} onActiveChange={setActive} onPick={(i, o) => void pick(i, o)}
-        hubLabel={hubLabel} thumbnail={first?.thumbnail} hubIcon={model.category ? CATEGORY_ICON[model.category] : 'file'}
+      <Wheel items={model.items} active={active} pickToken={turn} onActiveChange={setActive} onPick={(i, o) => void pick(i, o)}
+        hubLabel={hubLabel} thumbnail={first?.thumbnail}
         onDragTypes={(dt) => setDragFmts(fmtsFromDragTypes(dt))}
         onDropFiles={(dt, hit) => { void onDropFiles(dt, hit); }} />
       <p className="stage-wheel__caption">{caption}</p>

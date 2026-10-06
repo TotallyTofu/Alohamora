@@ -31,7 +31,7 @@ function dragDescription(caps: Capabilities): string {
     return 'Drag files in Finder and press ⇧ (⇧⌥ for tools) — the wheel shows your file before you drop. No special permission needed.';
   }
   if (caps.globalDrag === 'unavailable') return 'Not possible on Wayland — drop files on the window or use the file-manager menu.';
-  return "Drag files anywhere and press Shift (Shift+Alt for tools). Uses a global mouse/keyboard hook while Kabooks runs. Doesn't work over apps running as administrator.";
+  return "Drag files anywhere and press Shift (Shift+Alt for tools). Uses a global mouse/keyboard hook while Alohamora runs. Doesn't work over apps running as administrator.";
 }
 
 function heicText(caps: Capabilities): string {
@@ -106,15 +106,15 @@ export function SettingsView() {
         <Row label="Global drag wheel" hint={dragDescription(caps)}>
           <Toggle label="Global drag wheel" checked={s.globalDragWheel && caps.globalDrag !== 'unavailable'} onChange={(v) => set({ globalDragWheel: v })} disabled={caps.globalDrag === 'unavailable'} />
         </Row>
-        {win && <Row label="“Send to” menu" hint="Adds Kabooks to Explorer's Send to menu."><Toggle label="Send to menu" checked={s.sendToMenu} onChange={(v) => set({ sendToMenu: v })} /></Row>}
+        {win && <Row label="“Send to” menu" hint="Adds Alohamora to Explorer's Send to menu."><Toggle label="Send to menu" checked={s.sendToMenu} onChange={(v) => set({ sendToMenu: v })} /></Row>}
         {(win || linux) && (
           <Row label={linux ? 'File manager menu' : 'Right-click menu'}
-            hint={linux ? 'Nautilus Scripts and Dolphin: “Convert with Kabooks”.' : '“Convert with Kabooks” (under Show more options on Windows 11).'}>
+            hint={linux ? 'Nautilus Scripts and Dolphin: “Convert with Alohamora”.' : '“Convert with Alohamora” (under Show more options on Windows 11).'}>
             <Toggle label={linux ? 'File manager menu' : 'Right-click menu'} checked={s.contextMenu} onChange={(v) => set({ contextMenu: v })} />
           </Row>
         )}
         <Row label="Launch at login"><Toggle label="Launch at login" checked={s.launchAtLogin} onChange={(v) => set({ launchAtLogin: v })} /></Row>
-        {!mac && <Row label="Keep running in the tray" hint="Closing the window keeps Kabooks in the tray."><Toggle label="Keep running in the tray" checked={s.closeToTray} onChange={(v) => set({ closeToTray: v })} /></Row>}
+        {!mac && <Row label="Keep running in the tray" hint="Closing the window keeps Alohamora in the tray."><Toggle label="Keep running in the tray" checked={s.closeToTray} onChange={(v) => set({ closeToTray: v })} /></Row>}
       </Group>
 
       <Group title="Notifications">
@@ -136,6 +136,9 @@ export function SettingsView() {
         <Row label="Theme">
           <Segmented<Settings['theme']> label="Theme" value={s.theme} onChange={(v) => set({ theme: v })}
             options={[{ value: 'system', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
+        </Row>
+        <Row label="Sound effects" hint="A key turns as you move between choices and clicks like a lock when you pick one.">
+          <Toggle label="Sound effects" checked={s.sounds} onChange={(v) => set({ sounds: v })} />
         </Row>
         <Row label="High-contrast accent"><Toggle label="High-contrast accent" checked={s.highContrastAccent} onChange={(v) => set({ highContrastAccent: v })} /></Row>
         {mac && <Row label="Show icon in Dock"><Toggle label="Show icon in Dock" checked={s.showInDock} onChange={(v) => set({ showInDock: v })} /></Row>}

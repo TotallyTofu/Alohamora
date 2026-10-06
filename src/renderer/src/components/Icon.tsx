@@ -23,8 +23,3 @@ export function Icon({ name, size = 18, className }: { name: string; size?: numb
   const C = ICONS[name] ?? ICONS.file;
   return <C size={size} strokeWidth={1.75} className={className} aria-hidden="true" />;
 }
-
-/** Icon key for a file category (used in the wheel hub when there is no thumbnail). */
-export const CATEGORY_ICON: Record<string, string> = {
-  image: 'image', video: 'video', audio: 'audio', pdf: 'pdf', epub: 'epub', text: 'text', subtitle: 'subtitle'
-};

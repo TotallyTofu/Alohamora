@@ -41,7 +41,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false     # unsigned CI builds; see Task 13.6 for signing
       - uses: actions/upload-artifact@v4
         with:
-          name: kabooks-${{ matrix.os }}
+          name: alohamora-${{ matrix.os }}
           path: |
             dist/*.exe
             dist/*.dmg

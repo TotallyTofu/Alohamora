@@ -38,7 +38,7 @@ export const IPC = {
   engineReady: 'engine:ready'
 } as const;
 
-export interface KabooksApi {
+export interface AlohamoraApi {
   getPathForFile(file: File): string;
   getCapabilities(): Promise<Capabilities>;
   getSettings(): Promise<Settings>;

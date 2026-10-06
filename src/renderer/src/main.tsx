@@ -7,6 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { OverlayApp } from './OverlayApp';
 import { getPlatform } from './lib/platform';
+import { initSound } from './lib/sound';
 import { initTheme } from './lib/theme';
 
 const view = new URLSearchParams(window.location.search).get('view') ?? 'main';
@@ -16,4 +17,5 @@ document.documentElement.dataset.platform = getPlatform();   // CSS: html[data-p
 window.addEventListener('dragover', (e) => e.preventDefault());
 window.addEventListener('drop', (e) => e.preventDefault());
 void initTheme();
+void initSound();
 createRoot(document.getElementById('root') as HTMLElement).render(view === 'overlay' ? <OverlayApp /> : <App />);
