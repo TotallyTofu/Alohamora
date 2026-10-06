@@ -1,26 +1,47 @@
-import { app, BrowserWindow } from 'electron';
-import path from 'node:path';
+import { app, nativeTheme } from 'electron';
+import sharp from 'sharp';
+import { IPC } from '@shared/ipc';
+import { setQuitting } from './appState';
 import { detectCapabilities } from './capabilities';
+import { broadcast, registerIpc } from './ipc';
+import { initQueue } from './jobs/queue';
+import { log } from './log';
+import { notifyJobFinished } from './notify';
+import { registerProtocolHandlers, registerSchemes } from './protocol';
+import { blockNetwork, hardenWebContents } from './security';
+import { loadSettings, onSettingsChanged } from './settings';
+import { installAppMenu } from './integrations/appMenu';
+import { startEngine } from './windows/engineWindow';
+import { createMainWindow, showMainWindow } from './windows/mainWindow';
+import { createOverlayWindow } from './windows/overlayWindow';
 
-function createWindow(): void {
-  const win = new BrowserWindow({
-    width: 960,
-    height: 680,
-    show: false,
-    webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
-      sandbox: true,
-      contextIsolation: true
-    }
+sharp.cache(false);                         // avoid file locks (Windows) and stale reads
+if (process.platform === 'win32') app.setAppUserModelId('com.kabooks.app');           // Windows notifications
+if (process.platform === 'linux') app.commandLine.appendSwitch('enable-transparent-visuals');  // transparent overlay
+registerSchemes();                          // must run before 'ready'
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('before-quit', () => setQuitting());
+  app.on('window-all-closed', () => { /* keep running; quitting is explicit */ });
+  app.on('activate', () => showMainWindow());   // macOS: clicking the Dock icon re-opens the window
+
+  void app.whenReady().then(async () => {
+    installAppMenu();                           // macOS: App/Edit/Window menus (⌘C/⌘V, ⌘,); others: no menu bar
+    registerProtocolHandlers();
+    blockNetwork();
+    hardenWebContents();
+    const settings = loadSettings();
+    nativeTheme.themeSource = settings.theme;
+    await detectCapabilities();
+    initQueue((u) => broadcast(IPC.evJobUpdate, u), notifyJobFinished);
+    registerIpc();
+    await startEngine();
+    // Task 4.3 inserts the --selftest branch HERE.
+    createMainWindow();
+    createOverlayWindow();
+    onSettingsChanged((s) => { nativeTheme.themeSource = s.theme; broadcast(IPC.evSettings, s); });
+    log.info('Kabooks ready');
   });
-  win.once('ready-to-show', () => win.show());
-  const devUrl = process.env['ELECTRON_RENDERER_URL'];
-  if (!app.isPackaged && devUrl) void win.loadURL(`${devUrl}/index.html`);
-  else void win.loadFile(path.join(__dirname, '../renderer/index.html'));
 }
-
-void app.whenReady().then(() => {
-  void detectCapabilities();
-  createWindow();
-});
-app.on('window-all-closed', () => app.quit());

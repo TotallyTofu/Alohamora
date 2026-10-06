@@ -15,8 +15,8 @@ Blocked: (write here if something blocks you)
 ## Phase 2 — Binaries
 - [x] 2.1 fetch-binaries  - [x] 2.2 pdf.js assets  - [x] 2.3 heif-enc (optional): enabled? yes/no  - [x] 2.4 paths/log/errors/process/capabilities
 ## Phase 3 — Main foundation
-- [ ] 3.1 security/protocol  - [ ] 3.2 settings  - [ ] 3.3 ffmpeg runner  - [ ] 3.4 inspect/thumbnails  - [ ] 3.5 jobs
-- [ ] 3.6 engine window  - [ ] 3.7 windows  - [ ] 3.8 IPC/preload  - [ ] 3.9 index/notify  - [ ] 3.10 foundation check
+- [x] 3.1 security/protocol  - [x] 3.2 settings  - [x] 3.3 ffmpeg runner  - [x] 3.4 inspect/thumbnails  - [x] 3.5 jobs
+- [x] 3.6 engine window  - [x] 3.7 windows  - [x] 3.8 IPC/preload  - [x] 3.9 index/notify  - [x] 3.10 foundation check
 ## Phase 4 — AV + self-test
 - [ ] 4.1 ffmpegArgs  - [ ] 4.2 av converter  - [ ] 4.3 selftest harness (av: __ passed / __ failed)
 ## Phase 5 — UI & wheel (M1)
@@ -52,3 +52,4 @@ Blocked: (write here if something blocks you)
 - 2026-10-06 Tasks 0.2,0.3,0.4,0.5 — Deviations: electron-vite 5 needs vite<=7, so installed vite@7, @vitejs/plugin-react@5 (v6 needs vite 8), @types/node@22. typescript resolved to 7.x which removed baseUrl: tsconfig paths now use './src/...' without baseUrl. Preload builds as .js (not .mjs). Built app launches (smoke-tested).
 - 2026-10-06 Tasks 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 — Deviation: geometry.dragRect now rescales an aspect-locked rect to fit the frame (the plan's version clamped one side and broke the lock; the plan's own test case needs this). Added src/shared/testCaps.ts (makeCaps test helper). Test files are excluded from tsconfig.web and type-checked by tsconfig.node instead.
 - 2026-10-06 Tasks 2.1,2.2,2.3,2.4 — FFmpeg 9.0.2 (gyan essentials) + eng/vie tessdata fetched; 221 encoders detected. HEIC output NOT enabled on Windows (optional heif-enc.exe not installed; slice stays hidden). check-binaries threshold for tessdata relaxed to 100 KB (vie is ~530 KB).
+- 2026-10-06 Tasks 3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,3.10 — Deviation: with electron-vite 5, shared code imported by both preload entries was split into out/preload/chunks and sandboxed preloads cannot require() it (window.kabooks was undefined). Fixed with preload build.isolatedEntries=true plus a non-TTY guard in electron.vite.config.ts (electron-vite's reporter crashes when stdout is piped); removed deprecated externalizeDepsPlugin. Foundation check verified on Windows via DevTools Protocol: caps (221 encoders), inspect (audio wav 3s), job queue error message, overlay open/close.
