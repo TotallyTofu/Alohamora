@@ -1,5 +1,13 @@
 import type { FileInfo, ToolId } from '@shared/types';
 import type { JobContext } from '../jobs/context';
+import { runAudioBleep } from './audio/bleep';
+import { runAudioChannels } from './audio/channels';
+import { runAudioCompress } from './audio/compress';
+import { runAudioJoin } from './audio/join';
+import { runAudioMetadata } from './audio/metadata';
+import { runAudioNormalize } from './audio/normalize';
+import { runAudioTrim } from './audio/trim';
+import { runAudioVisualize } from './audio/visualize';
 import { runVideoCompress } from './video/compress';
 import { runVideoCrop } from './video/crop';
 import { runVideoJoin } from './video/join';
@@ -24,5 +32,13 @@ export const TOOL_RUNNERS: Partial<Record<ToolId, ToolRunFn>> = {
   'video.snapshot': runVideoSnapshot,
   'video.split': runVideoSplit,
   'video.redact': runVideoRedact,
-  'video.join': runVideoJoin
+  'video.join': runVideoJoin,
+  'audio.bleep': runAudioBleep,
+  'audio.channels': runAudioChannels,
+  'audio.compress': runAudioCompress,
+  'audio.join': runAudioJoin,
+  'audio.metadata': runAudioMetadata,
+  'audio.normalize': runAudioNormalize,
+  'audio.trim': runAudioTrim,
+  'audio.visualize': runAudioVisualize
 };

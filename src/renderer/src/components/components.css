@@ -30,9 +30,9 @@
 .row__hint { font-size: 12px; color: var(--text-3); }
 .row__control { display: flex; align-items: center; gap: 8px; }
 /* slider */
-.slider { display: grid; grid-template-columns: 70px 1fr 52px; align-items: center; gap: 12px; }
+.slider { display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 12px; }
 .slider__label { font-size: 15px; }
-.slider__value { font-size: 15px; text-align: right; font-variant-numeric: tabular-nums; }
+.slider__value { font-size: 15px; text-align: right; font-variant-numeric: tabular-nums; min-width: 52px; white-space: nowrap; }
 .slider input[type='range'] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 999px; outline-offset: 6px;
   background: linear-gradient(to right, var(--accent) 0 var(--pct), var(--track) var(--pct) 100%); }
 .slider input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;

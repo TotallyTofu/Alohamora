@@ -10,16 +10,17 @@ export function JoinPanel({ files, onApply, onBack, onClose }: ToolPanelProps) {
   const byPath = useMemo(() => new Map(files.map((f) => [f.path, f])), [files]);
   const ordered = order.map((p) => byPath.get(p)).filter((f) => !!f);
   const first = files[0];
-  const differ = files.some((f) => f.width !== first.width || f.height !== first.height
+  const audio = first.category === 'audio';
+  const differ = !audio && files.some((f) => f.width !== first.width || f.height !== first.height
     || f.videoCodec !== first.videoCodec || f.audioCodec !== first.audioCodec);
   return (
-    <Panel title="Join videos" onBack={onBack} onClose={onClose} applyLabel="Join" onReset={() => setOrder(files.map((f) => f.path))}
+    <Panel title={audio ? 'Join audio' : 'Join videos'} onBack={onBack} onClose={onClose} applyLabel="Join" onReset={() => setOrder(files.map((f) => f.path))}
       onApply={() => onApply({ order })}>
-      <p className="card-note">Drag to change the order. Hold <kbd>Alt</kbd> and use the arrow keys to move a clip with the keyboard.</p>
-      <ReorderList icon="video" onChange={setOrder}
+      <p className="card-note">Drag to change the order. Hold <kbd>Alt</kbd> and use the arrow keys to move {audio ? 'a file' : 'a clip'} with the keyboard.</p>
+      <ReorderList icon={audio ? 'audio' : 'video'} onChange={setOrder}
         items={ordered.map((f) => ({
           id: f.path, title: baseName(f.path), thumbnail: f.thumbnail,
-          subtitle: `${formatDuration(f.durationSec ?? 0)}${f.width ? ` · ${f.width}×${f.height}` : ''}`
+          subtitle: `${formatDuration(f.durationSec ?? 0)}${!audio && f.width ? ` · ${f.width}×${f.height}` : ''}`
         }))} />
       {differ && <p className="card-note">Clips differ — they'll be re-encoded to MP4 (slower).</p>}
     </Panel>

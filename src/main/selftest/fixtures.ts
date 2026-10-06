@@ -28,6 +28,8 @@ export const FIXTURES: Record<string, Maker> = {
   'video.mkv': async (out, dir) => { await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-c', 'copy', out]); },
   'anim.gif': async (out, dir) => { await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-t', '2', '-vf', 'fps=10,scale=160:-1', out]); },
   'audio.wav': (out) => runFfmpeg(['-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=44100:duration=4', '-ac', '2', '-c:a', 'pcm_s16le', out]),
+  'audio-mono.wav': (out) => runFfmpeg(['-f', 'lavfi', '-i', 'sine=frequency=330:sample_rate=44100:duration=3', '-ac', '1', '-c:a', 'pcm_s16le', out]),
+  'audio-silent.wav': (out) => runFfmpeg(['-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo', '-t', '2', '-c:a', 'pcm_s16le', out]),
   'audio.mp3': async (out, dir) => { await runFfmpeg(['-i', await ensureFixture(dir, 'audio.wav'), '-c:a', 'libmp3lame', '-q:a', '4', out]); },
   'stereo-lr.wav': (out) => runFfmpeg(['-f', 'lavfi', '-i', 'sine=frequency=440:duration=4', '-f', 'lavfi', '-i', 'sine=frequency=880:duration=4',
     '-filter_complex', '[0:a][1:a]join=inputs=2:channel_layout=stereo[a]', '-map', '[a]', '-c:a', 'pcm_s16le', out]),
