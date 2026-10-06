@@ -96,6 +96,7 @@ export const FIXTURES: Record<string, Maker> = {
       { jpeg, width: 800, height: 600 }, { jpeg, width: 800, height: 600 }
     ]));
   },
+  'doc-copy.pdf': async (out, dir) => { await fs.promises.copyFile(await ensureFixture(dir, 'doc.pdf'), out); },
   'scan.pdf': async (out, dir) => {
     const html = path.join(dir, 'tmp-scan.html');
     await fs.promises.writeFile(html, textToHtml('KABOOKS OCR TEST\n\nHello offline world.', { title: 'scan', font: 'sans', sizePt: 28, pageSize: 'a4' }), 'utf8');

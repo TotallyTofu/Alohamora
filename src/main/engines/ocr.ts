@@ -50,3 +50,19 @@ export async function ocrPdfToBlocks(pdfPath: string, ctx: JobContext, pageIndex
     return blocks;
   }));
 }
+
+export async function ocrPages(pdfPath: string, ctx: JobContext, langs: string[], pageIndexes: number[], wantPdf: boolean): Promise<{ text: string; pdfs: Buffer[] }> {
+  return withPdf(pdfPath, (doc) => withOcrWorker(langs, async (worker) => {
+    const texts: string[] = [];
+    const pdfs: Buffer[] = [];
+    for (let k = 0; k < pageIndexes.length; k++) {
+      throwIfAborted(ctx.signal);
+      const png = await pdfRenderPage(doc.id, pageIndexes[k], { dpi: 300, mime: 'image/png' });
+      const r = await recognize(worker, png, wantPdf);
+      texts.push(`--- Page ${pageIndexes[k] + 1} ---\n${r.text.trim()}`);
+      if (r.pdf) pdfs.push(r.pdf);
+      ctx.progress((k + 1) / pageIndexes.length, `Reading page ${pageIndexes[k] + 1} of ${doc.pages}`);
+    }
+    return { text: texts.join('\n\n') + '\n', pdfs };
+  }));
+}

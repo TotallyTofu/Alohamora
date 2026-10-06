@@ -1,8 +1,8 @@
 import fs from 'node:fs';
-import { PDFDocument } from 'pdf-lib';
+import { degrees, PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 import type { FileInfo } from '@shared/types';
-import { throwIfAborted } from '../errors';
+import { throwIfAborted, UserError } from '../errors';
 import { loadImage } from './image';
 
 export type PageSizeOpt = 'fit' | 'a4' | 'letter';
@@ -56,4 +56,50 @@ export async function imagesToPdf(
     onProgress((i + 1) / files.length);
   }
   await fs.promises.writeFile(out, await pdf.save());
+}
+
+export async function loadPdf(filePath: string): Promise<PDFDocument> {
+  try {
+    return await PDFDocument.load(await fs.promises.readFile(filePath), { updateMetadata: false });
+  } catch (e) {
+    const err = e as Error;
+    if (err.name === 'EncryptedPDFError' || /encrypt/i.test(err.message)) throw new UserError('This PDF is password-protected. Remove the password first, then try again.');
+    throw new UserError('This PDF could not be opened. It may be damaged.', err.message);
+  }
+}
+
+export async function extractPages(src: PDFDocument, indexes: number[]): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  for (const p of await doc.copyPages(src, indexes)) doc.addPage(p);
+  return doc.save({ useObjectStreams: true });
+}
+
+export async function mergePdfs(paths: string[], onProgress: (f: number) => void): Promise<Uint8Array> {
+  const merged = await PDFDocument.create();
+  for (let i = 0; i < paths.length; i++) {
+    const src = await loadPdf(paths[i]);
+    for (const p of await merged.copyPages(src, src.getPageIndices())) merged.addPage(p);
+    onProgress((i + 1) / paths.length);
+  }
+  return merged.save({ useObjectStreams: true });
+}
+
+export async function organizePdf(src: PDFDocument, pages: Array<{ src: number; rotate: number }>): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const copied = await doc.copyPages(src, pages.map((p) => p.src));
+  copied.forEach((pg, i) => {
+    pg.setRotation(degrees((pg.getRotation().angle + pages[i].rotate) % 360));
+    doc.addPage(pg);
+  });
+  return doc.save({ useObjectStreams: true });
+}
+
+/** Each page is drawn from a JPEG at [widthPt, heightPt] (used by "Max" compression). */
+export async function pageImagesToPdf(pages: Array<{ jpeg: Buffer; widthPt: number; heightPt: number }>): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  for (const p of pages) {
+    const img = await doc.embedJpg(p.jpeg);
+    doc.addPage([p.widthPt, p.heightPt]).drawImage(img, { x: 0, y: 0, width: p.widthPt, height: p.heightPt });
+  }
+  return doc.save({ useObjectStreams: true });
 }

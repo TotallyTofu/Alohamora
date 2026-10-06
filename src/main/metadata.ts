@@ -4,6 +4,7 @@ import { IPC } from '@shared/ipc';
 import type { MetadataField, MetadataInfo } from '@shared/types';
 import { fmtFromPath, categoryOf } from '@shared/formats';
 import { probe, runFfmpegToBuffer } from './engines/ffmpeg';
+import { loadPdf } from './engines/pdfOps';
 
 const VIDEO_KEYS: Array<[string, string]> = [['title', 'Title'], ['artist', 'Author'], ['comment', 'Comment'], ['date', 'Date'], ['description', 'Description']];
 const AUDIO_KEYS: Array<[string, string]> = [['title', 'Title'], ['artist', 'Artist'], ['album', 'Album'], ['album_artist', 'Album artist'], ['date', 'Year'], ['genre', 'Genre'], ['track', 'Track'], ['comment', 'Comment']];
@@ -54,13 +55,32 @@ export async function readImageMetadata(p: string): Promise<MetadataInfo> {
   return { kind: 'image', fields, hasGps };
 }
 
+const dateText = (d: Date | undefined): string => (d ? d.toLocaleString() : '');
+
+export async function readPdfMetadata(p: string): Promise<MetadataInfo> {
+  const doc = await loadPdf(p);
+  const fields: MetadataField[] = [
+    { key: 'title', label: 'Title', value: doc.getTitle() ?? '', editable: true },
+    { key: 'author', label: 'Author', value: doc.getAuthor() ?? '', editable: true },
+    { key: 'subject', label: 'Subject', value: doc.getSubject() ?? '', editable: true },
+    { key: 'keywords', label: 'Keywords', value: doc.getKeywords() ?? '', editable: true }
+  ];
+  const ro = (key: string, label: string, value: string): void => { if (value) fields.push({ key, label, value, editable: false }); };
+  ro('creator', 'Creator', doc.getCreator() ?? '');
+  ro('producer', 'Producer', doc.getProducer() ?? '');
+  ro('created', 'Created', dateText(doc.getCreationDate()));
+  ro('modified', 'Modified', dateText(doc.getModificationDate()));
+  ro('pages', 'Pages', String(doc.getPageCount()));
+  return { kind: 'pdf', fields };
+}
+
 export function registerMetadataIpc(): void {
   ipcMain.handle(IPC.readMetadata, async (_e, p: string) => {
     const fmt = fmtFromPath(p);
     const cat = fmt ? categoryOf(fmt) : null;
     if (cat === 'video' || cat === 'audio') return readMediaMetadata(p);
     if (cat === 'image') return readImageMetadata(p);
-    // Task 10.7 adds 'pdf'
+    if (cat === 'pdf') return readPdfMetadata(p);
     throw new Error('No metadata reader for this file type');
   });
 }

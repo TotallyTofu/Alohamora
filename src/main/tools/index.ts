@@ -17,6 +17,15 @@ import { runImageMetadata } from './image/metadata';
 import { runImagePdf } from './image/pdf';
 import { runImageRedact } from './image/redact';
 import { runImageResize } from './image/resize';
+import { runPdfCompress } from './pdf/compress';
+import { runPdfImages } from './pdf/images';
+import { runPdfMerge } from './pdf/merge';
+import { runPdfMetadata } from './pdf/metadata';
+import { runPdfOcr } from './pdf/ocr';
+import { runPdfOrganize } from './pdf/organize';
+import { runPdfSplit } from './pdf/split';
+import { runPdfWord } from './pdf/word';
+import { runSubtitleShift } from './subtitle/shift';
 import { runVideoCompress } from './video/compress';
 import { runVideoCrop } from './video/crop';
 import { runVideoJoin } from './video/join';
@@ -58,5 +67,14 @@ export const TOOL_RUNNERS: Partial<Record<ToolId, ToolRunFn>> = {
   'image.metadata': runImageMetadata,
   'image.pdf': runImagePdf,
   'image.redact': runImageRedact,
-  'image.resize': runImageResize
+  'image.resize': runImageResize,
+  'pdf.compress': runPdfCompress,
+  'pdf.images': runPdfImages,
+  'pdf.merge': runPdfMerge,
+  'pdf.metadata': runPdfMetadata,
+  'pdf.ocr': runPdfOcr,
+  'pdf.organize': runPdfOrganize,
+  'pdf.split': runPdfSplit,
+  'pdf.word': runPdfWord,
+  'subtitle.shift': runSubtitleShift
 };
