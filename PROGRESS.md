@@ -27,8 +27,8 @@ Blocked: (write here if something blocks you)
 - [x] 6.6 print/engine/TXT→PDF  - [x] 6.7 PDF→images  - [x] 6.8 reflow/TXT  - [x] 6.9 PDF→DOCX  - [x] 6.10 PDF→EPUB
 - [x] 6.11 EPUB→PDF  - [x] 6.12 OCR  - [x] 6.13 M2 full matrix
 ## Phase 7 — Video tools (M3a)
-- [ ] 7.1 previews  - [ ] 7.2 editors  - [ ] 7.3 videoArgs  - [ ] 7.4 compress  - [ ] 7.5 trim/split
-- [ ] 7.6 crop  - [ ] 7.7 speed/mute  - [ ] 7.8 snapshot  - [ ] 7.9 redact  - [ ] 7.10 metadata/join  - [ ] 7.11 M3a
+- [x] 7.1 previews  - [x] 7.2 editors  - [x] 7.3 videoArgs  - [x] 7.4 compress  - [x] 7.5 trim/split
+- [x] 7.6 crop  - [x] 7.7 speed/mute  - [x] 7.8 snapshot  - [x] 7.9 redact  - [x] 7.10 metadata/join  - [x] 7.11 M3a
 ## Phase 8 — Audio tools (M3b)
 - [ ] 8.1 waveform  - [ ] 8.2 audioArgs  - [ ] 8.3 compress/channels  - [ ] 8.4 normalize  - [ ] 8.5 trim
 - [ ] 8.6 visualize/bleep  - [ ] 8.7 metadata/join  - [ ] 8.8 M3b
@@ -58,3 +58,4 @@ Blocked: (write here if something blocks you)
 - 2026-10-06 Tasks 6.1,6.2,6.3,6.4,6.5 — selftest image 14 pass / 2 skip (HEIC encoder absent on Windows), text 5/5. Deviation: TS 7 cannot resolve 'sharp.Sharp' via sharp's 'export =' namespace; code uses 'import type { Sharp } from "sharp"' (scripted rewrite). Plan's literal BOM characters written as \uFEFF escapes. Not verified: HEIC encode/decode (no encoder on this machine).
 - 2026-10-06 Tasks 6.6,6.7,6.8 — text 8/8, pdf 3/3 (selftest). Deviations: pdfjs-dist is v6.4 - PDFDocumentProxy has no destroy(), engine/pdf.ts close() uses loadingTask.destroy(); pdfReflow.ts: two TS narrowing fixes (same behaviour). TextRenderCard/pdfReflow tests hand-written.
 - 2026-10-06 Tasks 6.9,6.10,6.11,6.12,6.13 — M2: full selftest 50 passed / 0 failed / 2 skipped (HEIC encoder absent on Windows). Verified visually: PDF wheel shows page-1 thumbnail; Export-to-Word card. OCR (tesseract.js 7) works in dev run. Not verified: opening produced DOCX in Word/LibreOffice, EPUB in a reader (no such apps driven here); EPUB cover thumbnail has no dedicated test.
+- 2026-10-06 Tasks 7.1,7.2,7.3,7.4,7.5,7.6,7.7,7.8,7.9,7.10,7.11 — M3a: selftest tools.video 15/15. Verified in the live app via DevTools Protocol: Crop/Trim/Compress/Redact panels render like the references; drew a redact box with real mouse events and ran the job. Deviations: splitSegments moved to src/shared/split.ts as the plan says; MediaPreview sizes itself as min(100%, maxHeight*ratio) (aspect-ratio boxes had no intrinsic width); video Crop lives in panels/common/CropPanel.tsx (image mode added in 9.3); Segmented got a disabled prop; RectEditor got classOf (per-style preview fill). Test fixtures video-copy.mp4 (dedupe of identical input paths) and titled.mp4 added. Not verified: playback of non-H.264 sources through the 480p proxy path; keyboard shortcuts I/O/C/Space.

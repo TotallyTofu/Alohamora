@@ -2,6 +2,7 @@ import '@fontsource-variable/inter';
 import './styles/tokens.css';
 import './styles/global.css';
 import './components/components.css';
+import './components/editors.css';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { OverlayApp } from './OverlayApp';

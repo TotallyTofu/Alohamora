@@ -18,6 +18,12 @@ const TEST_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="60
 export const FIXTURES: Record<string, Maker> = {
   'video.mp4': (out) => runFfmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000',
     '-t', '4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', out]),
+  'titled.mp4': async (out, dir) => {
+    await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-c', 'copy', '-metadata', 'title=Hello', out]);
+  },
+  'video-copy.mp4': async (out, dir) => {
+    await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-c', 'copy', out]);
+  },
   'video-noaudio.mp4': (out) => runFfmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=25', '-t', '2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out]),
   'video.mkv': async (out, dir) => { await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-c', 'copy', out]); },
   'anim.gif': async (out, dir) => { await runFfmpeg(['-i', await ensureFixture(dir, 'video.mp4'), '-t', '2', '-vf', 'fps=10,scale=160:-1', out]); },

@@ -6,6 +6,8 @@ import type { JobRequest, Settings, WheelMode } from '@shared/types';
 import { getCapabilities } from './capabilities';
 import { pdfThumbs, withPdf } from './engines/pdfEngine';
 import { inspectFiles } from './inspect';
+import { registerMetadataIpc } from './metadata';
+import { registerPreviewIpc } from './previews';
 import { getQueue } from './jobs/queue';
 import { getSettings, updateSettings } from './settings';
 import { isEngineWindow } from './windows/engineWindow';
@@ -33,6 +35,8 @@ export function broadcast(channel: string, payload: unknown): void {
 }
 
 export function registerIpc(): void {
+  registerPreviewIpc();
+  registerMetadataIpc();
   ipcMain.handle(IPC.getCapabilities, () => getCapabilities());
   ipcMain.handle(IPC.getSettings, () => getSettings());
   ipcMain.handle(IPC.setSettings, (_e, patch: Partial<Settings>) => updateSettings(patch));
