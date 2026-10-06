@@ -2,9 +2,10 @@ import fs from 'node:fs';
 import heicDecode from 'heic-decode';
 import sharp from 'sharp';
 import type { Sharp } from 'sharp';
-import type { FileInfo } from '@shared/types';
+import type { FileInfo, Fmt } from '@shared/types';
 import { UserError } from '../errors';
 import { runFfmpeg, runFfmpegToBuffer } from './ffmpeg';
+import { encodeHeic } from './heif';
 
 export type RasterFmt = 'jpg' | 'png' | 'webp' | 'avif' | 'tiff';
 
@@ -51,4 +52,24 @@ export async function saveBmp(img: Sharp, out: string, scratchPng: string): Prom
 export async function imageSize(file: Pick<FileInfo, 'path' | 'fmt'>): Promise<{ width: number; height: number }> {
   const { info } = await (await loadImage(file)).toBuffer({ resolveWithObject: true });
   return { width: info.width, height: info.height };
+}
+
+/** Bake pending operations into raw pixels. Needed before a second rotate()/extract(). */
+export async function materialize(img: Sharp): Promise<Sharp> {
+  const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
+  return sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels } });
+}
+
+/** Tools keep the input format when Kabooks can write it. */
+export function sameImageFmt(fmt: Fmt | null, heifEnc: boolean): 'jpg' | 'png' | 'webp' | 'avif' | 'tiff' | 'bmp' | 'heic' {
+  if (fmt === 'jpg' || fmt === 'png' || fmt === 'webp' || fmt === 'avif' || fmt === 'tiff' || fmt === 'bmp') return fmt;
+  if (fmt === 'heic') return heifEnc ? 'heic' : 'jpg';
+  return 'png';   // svg and anything else
+}
+
+export async function saveImageAs(img: Sharp, fmt: ReturnType<typeof sameImageFmt>, out: string, quality: number,
+  ctx: { tempPath(n: string): string; signal: AbortSignal }, keepMetadata = true): Promise<void> {
+  if (fmt === 'bmp') return saveBmp(img, out, ctx.tempPath('bmp.png'));
+  if (fmt === 'heic') return encodeHeic(img, out, quality, ctx.tempPath('heic.png'), ctx.signal);
+  return saveRaster(img, fmt, out, quality, keepMetadata);
 }

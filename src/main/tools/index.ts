@@ -8,6 +8,15 @@ import { runAudioMetadata } from './audio/metadata';
 import { runAudioNormalize } from './audio/normalize';
 import { runAudioTrim } from './audio/trim';
 import { runAudioVisualize } from './audio/visualize';
+import { runImageBackground } from './image/background';
+import { runImageCollage } from './image/collage';
+import { runImageCompress } from './image/compress';
+import { runImageCrop } from './image/crop';
+import { runImageEdit } from './image/edit';
+import { runImageMetadata } from './image/metadata';
+import { runImagePdf } from './image/pdf';
+import { runImageRedact } from './image/redact';
+import { runImageResize } from './image/resize';
 import { runVideoCompress } from './video/compress';
 import { runVideoCrop } from './video/crop';
 import { runVideoJoin } from './video/join';
@@ -40,5 +49,14 @@ export const TOOL_RUNNERS: Partial<Record<ToolId, ToolRunFn>> = {
   'audio.metadata': runAudioMetadata,
   'audio.normalize': runAudioNormalize,
   'audio.trim': runAudioTrim,
-  'audio.visualize': runAudioVisualize
+  'audio.visualize': runAudioVisualize,
+  'image.background': runImageBackground,
+  'image.collage': runImageCollage,
+  'image.compress': runImageCompress,
+  'image.crop': runImageCrop,
+  'image.edit': runImageEdit,
+  'image.metadata': runImageMetadata,
+  'image.pdf': runImagePdf,
+  'image.redact': runImageRedact,
+  'image.resize': runImageResize
 };

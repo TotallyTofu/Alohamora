@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
+import piexif from 'piexifjs';
 import sharp from 'sharp';
 import { textToHtml } from '@shared/text';
 import { runFfmpeg } from '../engines/ffmpeg';
@@ -105,6 +106,13 @@ export const FIXTURES: Record<string, Maker> = {
     const img = await pdf.embedPng(png);
     pdf.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 });
     await fs.promises.writeFile(out, await pdf.save());
+  },
+  'gps.jpg': async (out, dir) => {
+    const jpg = await sharp(await ensureFixture(dir, 'image.png')).flatten({ background: '#fff' }).jpeg().toBuffer();
+    const exif = { '0th': { [piexif.ImageIFD.Artist]: 'Tester' }, Exif: {}, GPS: {
+      [piexif.GPSIFD.GPSLatitudeRef]: 'N', [piexif.GPSIFD.GPSLatitude]: [[21, 1], [1, 1], [3000, 100]],
+      [piexif.GPSIFD.GPSLongitudeRef]: 'E', [piexif.GPSIFD.GPSLongitude]: [[105, 1], [51, 1], [0, 1]] } };
+    await fs.promises.writeFile(out, Buffer.from(piexif.insert(piexif.dump(exif), jpg.toString('binary')), 'binary'));
   }
 };
 

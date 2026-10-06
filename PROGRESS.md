@@ -33,8 +33,8 @@ Blocked: (write here if something blocks you)
 - [x] 8.1 waveform  - [x] 8.2 audioArgs  - [x] 8.3 compress/channels  - [x] 8.4 normalize  - [x] 8.5 trim
 - [x] 8.6 visualize/bleep  - [x] 8.7 metadata/join  - [x] 8.8 M3b
 ## Phase 9 — Image tools (M4)
-- [ ] 9.1 preview pipeline  - [ ] 9.2 compress/resize  - [ ] 9.3 crop  - [ ] 9.4 edit  - [ ] 9.5 backdrop
-- [ ] 9.6 redact  - [ ] 9.7 metadata  - [ ] 9.8 collage  - [ ] 9.9 make PDF  - [ ] 9.10 M4
+- [x] 9.1 preview pipeline  - [x] 9.2 compress/resize  - [x] 9.3 crop  - [x] 9.4 edit  - [x] 9.5 backdrop
+- [x] 9.6 redact  - [x] 9.7 metadata  - [x] 9.8 collage  - [x] 9.9 make PDF  - [x] 9.10 M4
 ## Phase 10 — PDF tools (M5)
 - [ ] 10.1 merge/split  - [ ] 10.2 organize  - [ ] 10.3 images  - [ ] 10.4 compress  - [ ] 10.5 OCR
 - [ ] 10.6 word  - [ ] 10.7 metadata  - [ ] 10.8 subtitle shift + M5
@@ -60,3 +60,4 @@ Blocked: (write here if something blocks you)
 - 2026-10-06 Tasks 6.9,6.10,6.11,6.12,6.13 — M2: full selftest 50 passed / 0 failed / 2 skipped (HEIC encoder absent on Windows). Verified visually: PDF wheel shows page-1 thumbnail; Export-to-Word card. OCR (tesseract.js 7) works in dev run. Not verified: opening produced DOCX in Word/LibreOffice, EPUB in a reader (no such apps driven here); EPUB cover thumbnail has no dedicated test.
 - 2026-10-06 Tasks 7.1,7.2,7.3,7.4,7.5,7.6,7.7,7.8,7.9,7.10,7.11 — M3a: selftest tools.video 15/15. Verified in the live app via DevTools Protocol: Crop/Trim/Compress/Redact panels render like the references; drew a redact box with real mouse events and ran the job. Deviations: splitSegments moved to src/shared/split.ts as the plan says; MediaPreview sizes itself as min(100%, maxHeight*ratio) (aspect-ratio boxes had no intrinsic width); video Crop lives in panels/common/CropPanel.tsx (image mode added in 9.3); Segmented got a disabled prop; RectEditor got classOf (per-style preview fill). Test fixtures video-copy.mp4 (dedupe of identical input paths) and titled.mp4 added. Not verified: playback of non-H.264 sources through the 480p proxy path; keyboard shortcuts I/O/C/Space.
 - 2026-10-06 Tasks 8.1,8.2,8.3,8.4,8.5,8.6,8.7,8.8 — M3b: selftest tools.audio 12/12. Verified panel rendering for Trim/Bleep/Visualize in the live app. JoinPanel/MetadataPanel are shared with video (audio-aware). Fixtures audio-mono.wav and audio-silent.wav added. Not verified: actual audio playback (useAudio/Waveform play button, Play selection, Preview tone) - no audio output device driven here; B/I/O keys.
+- 2026-10-06 Tasks 9.1,9.2,9.3,9.4,9.5,9.6,9.7,9.8,9.9,9.10 — M4: selftest tools.image 16/16. Verified in the live app: Edit/Compress/Crop panels (live size estimate works), image crop rotate+apply via real clicks -> 600x800 output. Deviations: lossless JPEG metadata strip is skipped when the photo has an EXIF orientation tag (re-encode instead; otherwise portrait photos would turn sideways); non-JPEG remove-gps/edit use sharp withExif; collage corner radius is a percentage of the tile. Not verified: HEIC photos, Backdrop/Collage/Redact/Metadata/MakePDF panels visually (only via selftest), 'Hold to compare', multi-file labels.

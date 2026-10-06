@@ -59,3 +59,9 @@
 .ring__inner img { width: 100%; height: 100%; object-fit: cover; }
 /* small helper text inside cards */
 .card-note { font-size: 13px; color: var(--text-2); line-height: 1.45; }
+
+/* slim scrollbars inside cards */
+.panel__body, .twocol__side, .reorder { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.panel__body::-webkit-scrollbar, .twocol__side::-webkit-scrollbar, .reorder::-webkit-scrollbar { width: 8px; }
+.panel__body::-webkit-scrollbar-thumb, .twocol__side::-webkit-scrollbar-thumb, .reorder::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+.panel__body::-webkit-scrollbar-button, .twocol__side::-webkit-scrollbar-button, .reorder::-webkit-scrollbar-button { display: none; }
