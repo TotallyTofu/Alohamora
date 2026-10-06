@@ -17,7 +17,8 @@
     "fetch-binaries": "node scripts/fetch-binaries.mjs",
     "check-binaries": "node scripts/check-binaries.mjs",
     "predev": "node scripts/copy-pdfjs-assets.mjs",
-    "prebuild": "node scripts/copy-pdfjs-assets.mjs"
+    "prebuild": "node scripts/copy-pdfjs-assets.mjs",
+    "selftest": "npm run build && electron . --selftest"
   },
   "dependencies": {
     "docx": "^9.8.1",

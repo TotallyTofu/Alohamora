@@ -18,7 +18,7 @@ Blocked: (write here if something blocks you)
 - [x] 3.1 security/protocol  - [x] 3.2 settings  - [x] 3.3 ffmpeg runner  - [x] 3.4 inspect/thumbnails  - [x] 3.5 jobs
 - [x] 3.6 engine window  - [x] 3.7 windows  - [x] 3.8 IPC/preload  - [x] 3.9 index/notify  - [x] 3.10 foundation check
 ## Phase 4 — AV + self-test
-- [ ] 4.1 ffmpegArgs  - [ ] 4.2 av converter  - [ ] 4.3 selftest harness (av: __ passed / __ failed)
+- [x] 4.1 ffmpegArgs  - [x] 4.2 av converter  - [x] 4.3 selftest harness (av: 18 passed / 0 failed)
 ## Phase 5 — UI & wheel (M1)
 - [ ] 5.1 tokens  - [ ] 5.2 components  - [ ] 5.3 geometry  - [ ] 5.4 Wheel  - [ ] 5.5 overlay
 - [ ] 5.6 stages  - [ ] 5.7 main window  - [ ] 5.8 options/panels  - [ ] 5.9 M1 acceptance
@@ -53,3 +53,4 @@ Blocked: (write here if something blocks you)
 - 2026-10-06 Tasks 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 — Deviation: geometry.dragRect now rescales an aspect-locked rect to fit the frame (the plan's version clamped one side and broke the lock; the plan's own test case needs this). Added src/shared/testCaps.ts (makeCaps test helper). Test files are excluded from tsconfig.web and type-checked by tsconfig.node instead.
 - 2026-10-06 Tasks 2.1,2.2,2.3,2.4 — FFmpeg 9.0.2 (gyan essentials) + eng/vie tessdata fetched; 221 encoders detected. HEIC output NOT enabled on Windows (optional heif-enc.exe not installed; slice stays hidden). check-binaries threshold for tessdata relaxed to 100 KB (vie is ~530 KB).
 - 2026-10-06 Tasks 3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,3.10 — Deviation: with electron-vite 5, shared code imported by both preload entries was split into out/preload/chunks and sandboxed preloads cannot require() it (window.kabooks was undefined). Fixed with preload build.isolatedEntries=true plus a non-TTY guard in electron.vite.config.ts (electron-vite's reporter crashes when stdout is piped); removed deprecated externalizeDepsPlugin. Foundation check verified on Windows via DevTools Protocol: caps (221 encoders), inspect (audio wav 3s), job queue error message, overlay open/close.
+- 2026-10-06 Tasks 4.1,4.2,4.3 — selftest av: 18 passed / 0 failed / 0 skipped on win32-x64 (FFmpeg 9.0.2).

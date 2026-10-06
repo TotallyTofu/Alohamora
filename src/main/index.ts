@@ -14,13 +14,14 @@ import { installAppMenu } from './integrations/appMenu';
 import { startEngine } from './windows/engineWindow';
 import { createMainWindow, showMainWindow } from './windows/mainWindow';
 import { createOverlayWindow } from './windows/overlayWindow';
+import { runSelfTest } from './selftest';
 
 sharp.cache(false);                         // avoid file locks (Windows) and stale reads
 if (process.platform === 'win32') app.setAppUserModelId('com.kabooks.app');           // Windows notifications
 if (process.platform === 'linux') app.commandLine.appendSwitch('enable-transparent-visuals');  // transparent overlay
 registerSchemes();                          // must run before 'ready'
 
-if (!app.requestSingleInstanceLock()) {
+if (!process.argv.includes('--selftest') && !app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('before-quit', () => setQuitting());
@@ -38,7 +39,11 @@ if (!app.requestSingleInstanceLock()) {
     initQueue((u) => broadcast(IPC.evJobUpdate, u), notifyJobFinished);
     registerIpc();
     await startEngine();
-    // Task 4.3 inserts the --selftest branch HERE.
+    if (process.argv.includes('--selftest')) {
+      const code = await runSelfTest(process.argv);
+      app.exit(code);
+      return;
+    }
     createMainWindow();
     createOverlayWindow();
     onSettingsChanged((s) => { nativeTheme.themeSource = s.theme; broadcast(IPC.evSettings, s); });
