@@ -12,7 +12,9 @@ Design notes live in `OUTLINE.md`; the build plan is `PLAN.md`; the build log (w
 ## Running it from source
 
 Requirements: Node 22+, and Git. On Linux install the Electron libraries first
-(`sudo apt install libgtk-3-0 libnss3 libxss1 libasound2t64 libgbm1 libxtst6 libnotify4`).
+(`sudo apt install libgtk-3-0 libnss3 libxss1 libasound2t64 libgbm1 libxtst6 libnotify4`). On macOS install the Xcode
+Command Line Tools (`xcode-select --install`): `fetch-binaries` uses `swiftc` to build the drag helper, and packaging uses
+`codesign`. On Apple Silicon use an **arm64** Node (`node -p process.arch` must print `arm64`, not `x64`).
 
 ```
 npm install
@@ -45,13 +47,44 @@ Each OS builds on itself (the native `sharp` binaries are per-OS and per-CPU):
 
 ```
 npm run dist:win      # NSIS installer + portable .exe in dist/
-npm run dist:mac      # DMG + ZIP (set CSC_IDENTITY_AUTO_DISCOVERY=false for an unsigned build)
+npm run dist:mac      # DMG + ZIP; needs a signing identity, see "Building for macOS" below
 npm run dist:linux    # AppImage + .deb
 ```
 
-A packaged app can test itself: run `Alohamora.exe --selftest` and read `<temp>/alohamora-selftest/report.json`.
-`.github/workflows/build.yml` builds and self-tests all platforms. Unsigned builds show one OS warning on first launch
-(SmartScreen, Gatekeeper); see PLAN.md Task 13.6 for signing and notarization.
+### Building for macOS
+
+`npm run dist:mac` signs with your Developer ID when one is installed (see PLAN.md Task 13.6 for signing and notarization).
+Without one, build an **ad-hoc signed** app, which is what you want for your own Mac or for testing:
+
+```
+npm run build
+npx electron-builder --mac -c.mac.identity=- -c.directories.output="$HOME/alohamora-build/dist"
+```
+
+- **Do not use `CSC_IDENTITY_AUTO_DISCOVERY=false` on its own.** It skips signing altogether and leaves the renamed app with
+  an invalid signature (`codesign --verify` fails). A copy downloaded from the internet is then reported as *"is damaged and
+  can't be opened"* instead of the normal *unidentified developer* prompt.
+- **Keep the output folder out of iCloud.** If the project is in `~/Desktop` or `~/Documents` with iCloud Drive sync on, macOS
+  adds Finder attributes to the build output and `codesign` fails with *"resource fork, Finder information, or similar
+  detritus not allowed"*. The `-c.directories.output=...` above writes the DMG and ZIP to a folder that is not synced.
+- The command builds for the CPU you are on (arm64 on Apple Silicon). An Intel build needs an Intel Mac or the CI runner.
+- Check the result: `codesign --verify --deep --strict --verbose=2 "$HOME/alohamora-build/dist/mac-arm64/Alohamora.app"`.
+
+### Self-test of a packaged app
+
+A packaged app can test itself and writes a JSON report:
+
+| OS | Command | Report |
+|---|---|---|
+| Windows | `Alohamora.exe --selftest` | `%TEMP%\alohamora-selftest\report.json` |
+| macOS | `Alohamora.app/Contents/MacOS/Alohamora --selftest` | `$TMPDIR/alohamora-selftest/report.json` |
+
+On an Apple Silicon Mac the result was `122 passed, 0 failed, 1 skipped` (the skip is the "no HEIC encoder" case, which
+cannot run because `sips` provides an encoder).
+
+`.github/workflows/build.yml` builds and self-tests all platforms. Unsigned or ad-hoc signed builds show one OS warning on
+first launch. On macOS (Gatekeeper), open the app with right-click → Open, or use System Settings → Privacy & Security →
+Open Anyway. An app you built on the same Mac has no quarantine flag and opens normally.
 
 ## Platform notes
 
@@ -61,7 +94,8 @@ A packaged app can test itself: run `Alohamora.exe --selftest` and read `<temp>/
 | File-manager entry | Send to + right-click | Open With, Dock drop | Open With, Nautilus script, Dolphin menu |
 | Hardware video encoding | NVENC / Quick Sync / AMF | VideoToolbox | NVENC |
 
-Troubleshooting tips are in `PLAN.md` Appendix D.
+Troubleshooting tips are in `PLAN.md` Appendix D. Status of each platform (what has been run and what has not) is in the
+"Verification status" section of `PROGRESS.md`.
 
 ## Licences
 
