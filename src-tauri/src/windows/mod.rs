@@ -24,6 +24,14 @@ pub struct DropEvent {
     pub shift: bool,
 }
 
+/// What to divide a drag-drop position by to get CSS pixels. Tauri hands wry's numbers over as a `PhysicalPosition`
+/// without converting them, but wry's macOS web view reports view points (already CSS pixels); only Windows reports real
+/// physical pixels. Dividing points by the Retina scale as well put the cursor at half its place on a Mac, so the wheel
+/// only ever saw the upper-left quadrant (9 to 12 o'clock) and a release at the centre landed on a slice.
+fn css_divisor(scale: f64, positions_are_logical: bool) -> f64 {
+    if positions_are_logical { 1.0 } else { scale }
+}
+
 fn drop_event(phase: &'static str, paths: Option<&Vec<std::path::PathBuf>>, pos: Option<tauri::PhysicalPosition<f64>>, scale: f64) -> DropEvent {
     let (alt, shift) = platform::modifiers();
     let (x, y) = pos.map(|p| (p.x / scale, p.y / scale)).unwrap_or((0.0, 0.0));
@@ -42,7 +50,7 @@ pub fn on_window_event(window: &Window, event: &WindowEvent) {
             }
         }
         WindowEvent::DragDrop(dd) => {
-            let scale = window.scale_factor().unwrap_or(1.0);
+            let scale = css_divisor(window.scale_factor().unwrap_or(1.0), cfg!(target_os = "macos"));
             let payload = match dd {
                 tauri::DragDropEvent::Enter { paths, position } => drop_event("enter", Some(paths), Some(*position), scale),
                 tauri::DragDropEvent::Over { position } => drop_event("over", None, Some(*position), scale),
@@ -56,5 +64,22 @@ pub fn on_window_event(window: &Window, event: &WindowEvent) {
             let _ = window.emit_to(window.label(), "ev:drop", payload);
         }
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::css_divisor;
+
+    #[test]
+    fn logical_positions_are_not_scaled_again() {
+        // macOS (Retina, scale 2): wry already gives CSS pixels, so the position must pass through unchanged.
+        assert_eq!(css_divisor(2.0, true), 1.0);
+    }
+
+    #[test]
+    fn physical_positions_are_divided_by_the_scale() {
+        // Windows at 150%: wry gives physical pixels.
+        assert_eq!(css_divisor(1.5, false), 1.5);
     }
 }
