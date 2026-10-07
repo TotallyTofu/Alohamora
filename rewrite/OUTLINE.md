@@ -1,7 +1,9 @@
 # Alohamora rewrite: Electron → Rust + Tauri 2 · Outline
 
-> **Status:** draft for review · written 2026-10-07 against `master` @ `2a23791`.
-> **Audience:** the owner, and the agent that will turn this outline into `rewrite/PLAN.md`.
+> **Status:** revision 2 · written 2026-10-07 against `master` @ `2a23791`, revised the same day after `rewrite/PLAN.md`
+> was written and its code compiled and run. **Where this outline and `rewrite/PLAN.md` disagree, PLAN.md wins**; the
+> "Revision 2" section below lists every decision that changed.
+> **Audience:** the owner, and the agent that implements `rewrite/PLAN.md`.
 > **Companion documents (still valid):**
 > - `OUTLINE.md` is the product spec: interaction, format matrix, tools and UI design (§6–§9). This rewrite does not change it.
 > - `PLAN.md`: Appendix A (FFmpeg cookbook), Appendix B (EPUB templates) and Appendix C (error catalogue) still apply.
@@ -11,6 +13,60 @@
 > - ✅ verified on 2026-10-07 against source code or a package registry.
 > - 🔬 needs a spike before it is relied on (see §13.0).
 > - ⚠️ known gap against the Electron build, with a documented fallback.
+
+## Revision 2 — decisions made while writing and validating PLAN.md
+
+The owner added two requirements after this outline was written, and building the code for `rewrite/PLAN.md` settled most
+spikes. The rest of this document is kept for its reasoning; read it with this table in mind.
+
+**New owner decisions**
+
+| # | Decision | Consequences |
+|---|---|---|
+| D8 | **EPUB → PDF is removed.** PDF → EPUB stays. | EPUB is an output-only format of the PDF category, like DOCX (`FORMATS.epub = { category: 'pdf', input: false }`; the `'epub'` category is gone). No EPUB reader, no print windows, no `epubprint://` scheme, no EPUB thumbnails, no EPUB file association. The self-test has **121** cases (the two `convert.epub.*-pdf` cases are gone). Spike S1 shrinks to "Typst for TXT → PDF", which is done. |
+| D9 | **Fully offline, enforced.** | Nothing at run time may open a network connection. Enforced by: no HTTP/TLS client crate among the runtime dependencies on any desktop target, no socket APIs in our code, no network APIs or remote URLs in the UI, a strict CSP — all checked by `scripts/check-offline.mjs` — plus WebView2 switches that turn off SmartScreen, component updates and pings (`WEBVIEW2_ARGS`), Typst without its `packages` feature, OCR data only from the bundled `tessdata/`, the WebView2 **offline installer** in the NSIS setup, and the self-test run with networking removed (`unshare -rn`) in CI. Downloads happen only at build time (PLAN.md §3). |
+
+**Design changes against this outline** (all compiled and tested; see PLAN.md for the code)
+
+| Topic | This outline said | Final design | Sections superseded |
+|---|---|---|---|
+| Engine concurrency | tokio runtime, `async` commands, `CancellationToken`, `tokio::process` | The engine is **synchronous**: one plain thread per running job, a shared `CancelToken` flag, `std::process` with kill on cancel. Tauri commands wrap blocking work in `spawn_blocking`. No tokio in the engine. | §5.4, §4.3 (`child_process` row) |
+| PDFium | one actor thread with channels and timeouts | One global `Pdfium` (`OnceLock`); the `thread_safe` feature serialises every call behind a mutex, so any job thread can use it. | §5.4, §7.15 |
+| PDF page operations | lopdf merge/split/organize, PDFium import as fallback | **PDFium page import** (`copy_pages_from_document`) for merge, split, organize and "remove all metadata"; **lopdf** for creating PDFs, the Info dictionary and image recompression. | §7.16 |
+| HEIC / AVIF input | `libheif-rs` (dynamic), AVIF via FFmpeg or dav1d | **Both decoded by the bundled FFmpeg** (PNG through a pipe). Requires **FFmpeg 7.1+** (tiled iPhone HEIC); `check-binaries` enforces it. No libheif in the app. | §7.14, §4.3, Q3, Q4 |
+| HEIC output | `sips` / `heif-enc` | Unchanged, but `heif-enc` counts only if `--list-encoders` shows an HEVC encoder. | §7.3 |
+| Image crates | `fast_image_resize`, `smartcrop2`, `quantette`, `moxcms`, `little_exif` | `image` 0.25 resize; collage cover = **centre crop**; PNG palette = `color_quant` (NeuQuant); EXIF = `kamadak-exif` + `img-parts` with our own IFD rebuild; **no colour-management transform** (ICC profiles are carried over to JPEG/PNG/WebP). | §7.14, §4.3, Q5 |
+| Text → PDF | Typst for TXT; native webview print for EPUB | **Typst only** (`typst-as-lib` 0.16 without `packages`, `typst-pdf` 0.15), bundled Noto fonts + system fonts. No `Printer` trait, no print window. | §7.17, §5.1, §5.3, Q2 |
+| OCR searchable PDF | Tesseract's PDF renderer | **Our own text layer**: Tesseract TSV word boxes → invisible text (render mode 3, Tesseract's glyphless font, ToUnicode map) over the page JPEG. `tesseract-rs` builds Leptonica without zlib and Tesseract's PDF renderer crashes. | §7.18 |
+| OCR "no data" message | `No OCR language data found. Run "npm run fetch-binaries".` | `No OCR language data found. Reinstall Alohamora.` (installed apps have no npm). | §7.18, Appendix D |
+| DOCX | try `docx-rs` first | **Our own small writer** (zip + XML; Heading1–3 styles, numbering, sections). | §7.19, Q6 |
+| EPUB | reader + writer | **Writer only** (reflowable and fixed layout). | §7.20 |
+| TS ↔ Rust types | `ts-rs` generates TypeScript from Rust | No code generation for types: `core/src/types.rs` mirrors `types.ts` by hand (camelCase serde). The **data tables stay in TypeScript** and `scripts/gen-registry.mjs` writes `src/shared/registry/*.json` from them (Node 22.18+ type stripping); Rust embeds the JSON; CI runs `gen:registry --check`. | §5.5, Q7 |
+| Licence/offline tooling | `cargo-deny` | `scripts/check-licenses.mjs` (writes `THIRD_PARTY_CRATES.md`; MPL allowed, GPL/LGPL/AGPL rejected) and `scripts/check-offline.mjs`. | §9, §12.7 |
+| Offline proof in CI | `strace -e connect` | The self-test runs under `unshare -rn` (no network namespace) on Linux CI. | §9 |
+| WebView2 | `IsReputationCheckingRequired = false` | Browser arguments on every window: `--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-background-networking --disable-component-update --no-pings --disable-domain-reliability`; installer embeds the **offline** WebView2 runtime. | §9, §12.4 |
+| macOS PDFium | resource | Shipped as a **framework** (`Contents/Frameworks/libpdfium.dylib`) so it is signed and notarized with the app; entitlement `disable-library-validation` only. | §12.3–12.5 |
+| Build prerequisites | — | **CMake 3.20+ and NASM 2.15+** (Tesseract/Leptonica, mozjpeg, rav1e); Rust pinned to **1.97.0**; debug builds optimise dependencies (`[profile.dev.package."*"] opt-level = 2`). | §12.1 |
+| Phases | P1–P10 | PLAN.md uses its own phases 0–10: UI first (Phase 1), then core, engine, self-test, app, packaging. | §13.1 |
+
+**Spike outcomes** (S1–S9 in §13.0)
+
+| Spike | Outcome |
+|---|---|
+| S1 | Done for TXT → PDF with Typst (the self-test text includes Vietnamese). The EPUB part is void (D8). |
+| S2 | Implemented (`SW_SHOWNOACTIVATE`, `orderFrontRegardless` at the pop-up level on all Spaces); **still to verify by hand** on Windows and macOS, including mixed-DPI monitors (PLAN.md Appendix F). |
+| S3 | `kfile` protocol with Range support and proxies for unplayable codecs implemented (Range parsing unit-tested). Playback and seeking in each web view are **still to verify by hand** (PLAN.md Task 8.9, Appendix G). |
+| S4 | Passed in the self-test: page sizes, rendering at DPI, `doc.pdf` → TXT/DOCX/EPUB through the reflow, merge/split/organize via PDFium import, lopdf metadata and recompression. A side-by-side review against the Electron output on real-world PDFs is still open. |
+| S5 | Passed: every image self-test case. CMYK/wide-gamut colour conversion is not done (see the table above). |
+| S6 | Passed on Linux with the static `tesseract-rs` build; searchable PDF via our own text layer. |
+| S7 | Implemented with pointer events; verify on Windows by hand. |
+| S8 | Implemented (60 Hz poller, Windows + X11); verify by hand. |
+| S9 | Not measured yet (Phase 10). The Linux release `.deb` is 178 MB, most of it FFmpeg. |
+
+**Validation status.** On Linux x86-64: all Rust unit tests and Clippy clean; the self-test 119 passed / 0 failed /
+2 skipped (machine-dependent) through the debug app, the release `.deb` layout and with networking removed; the UI
+type-checks, its 122 tests pass and it builds; the app opened its windows under X11 (Xvfb) and converted a file through the wheel. Windows-
+and macOS-only modules were type-checked in isolation; everything else on those OSes is a manual check (PLAN.md Phase 10).
 
 ---
 
@@ -44,7 +100,7 @@
 |---|---|
 | Chromium + Node runtime | System webviews |
 | Hidden pdf.js "engine" window | pdfium |
-| Temporary print windows | Typst / native webview print |
+| Temporary print windows | Typst (TXT → PDF); EPUB → PDF is removed (D8) |
 | sharp/libvips | Rust image codecs |
 | tesseract.js WASM | Native Tesseract |
 | uiohook-napi | A small input-state poller |
@@ -54,7 +110,7 @@
 - The macOS Swift drag helper.
 - HEIC output via `sips` or `heif-enc`.
 - Every format, tool and OS integration.
-- The 123-case self-test, under the same case names.
+- The self-test, under the same case names: 121 cases (123 minus the two removed EPUB → PDF cases).
 
 **Expected result**
 - **Size:** the installed app drops from about 537 MB to an estimated 170–220 MB. FFmpeg then makes up 60–70% of the app; slimming it is a later lever (§10.3).
@@ -72,7 +128,9 @@
 | D4 | **Signing and notarization are in scope** | macOS Developer ID + notarization, and Windows Authenticode (§12.5). |
 | D5 | **Out of scope** | Mac App Store, Windows on ARM, a custom slim FFmpeg build, auto-update. |
 | D6 | **Location of the docs** | `rewrite/OUTLINE.md`, plus the future `rewrite/PLAN.md` and `rewrite/PROGRESS.md`. The root `OUTLINE.md` stays as the Electron design. |
-| D7 | **Port in place** | Work happens in the same repo. The Electron build keeps working until cutover (§13, P10), so both shells can run the same UI side by side. |
+| D7 | **Port in place** | Work happens in the same repo. The Electron build keeps working until cutover (§13, P10), so both shells can run the same UI side by side. *(Revision 2: PLAN.md removes the Electron code in its Phase 1 and tags the last Electron commit `electron-last`.)* |
+| D8 | **EPUB → PDF is removed** (added in revision 2) | See "Revision 2". PDF → EPUB stays. |
+| D9 | **Fully offline, enforced** (added in revision 2) | See "Revision 2" and PLAN.md §3. |
 
 ---
 
@@ -155,6 +213,9 @@ These are checked at the final milestone using the measurement harness in §10.4
 
 ### 4.3 Runtime dependencies and their replacements
 
+*(Revision 2: see the "Revision 2" table for what changed. The final crates and versions are in PLAN.md §2 and
+`rewrite/Cargo.lock`.)*
+
 | Today | Role | Rust replacement (version checked on crates.io, 2026-10-07) | Status |
 |---|---|---|---|
 | `electron` 44 | Shell | `tauri` 2.12.1, `wry` 0.57.0 | ✅ |
@@ -189,13 +250,16 @@ These are checked at the final milestone using the measurement harness in §10.4
 │   DOCX · EPUB · text → PDF (Typst) · FFmpeg runner                             │
 │ integrations: Send To · registry verb · Linux menus · autostart · migration    │
 │   global-drag poller (Win/X11) · Swift helper bridge (macOS)                   │
-└────┬───────────────┬────────────────────┬──────────────────┬───────────────────┘
-     │ webview       │ webview            │ webview          │ child processes
- main window     overlay window       print window        ffmpeg / ffprobe (per step)
- React UI        React UI,            hidden, on demand,  alohamora-drag-helper (macOS)
- (lazy)          transparent,         EPUB → PDF only     sips / heif-enc (HEIC output)
+└────┬───────────────┬───────────────────────────────────────┬───────────────────┘
+     │ webview       │ webview                               │ child processes
+ main window     overlay window                          ffmpeg / ffprobe (per step)
+ React UI        React UI,                               alohamora-drag-helper (macOS)
+ (lazy)          transparent,                            sips / heif-enc (HEIC output)
                  pre-warmed
 ```
+
+*(Revision 2: the hidden print window is gone with EPUB → PDF (D8), and PDFium is called directly from job threads
+instead of an actor thread.)*
 
 **The webview runtime differs per OS:**
 
@@ -242,6 +306,9 @@ Node remains a **build-time** dependency (Vite, vitest, TypeScript, Tauri CLI). 
 | `engine` | core, tokio, codecs, pdfium-render, lopdf, tesseract-rs, typst | `paths` (a struct the app injects); `process`; `ffmpeg`; `capabilities`; `hw_video`; `settings`; `inspect`; `thumbnails`; `preview::{media, image}`; `metadata`; `image::{load, save, heic, svg, edit, background, collage, exif}`; `pdf::{actor, edit, compress, create}`; `ocr`; `docx`; `epub::{reader, writer, templates}`; `html_pdf::{typst, Printer trait}`; `jobs::{context, execute, queue}`; `convert::*`; `tools::*`; `selftest::{cases, fixtures, assert}` |
 | `app` (the Tauri binary) | engine, tauri, plugins | `main`; `lifecycle`; `state`; `commands`; `events`; `protocol::{kfile, epubprint}`; `windows::{main, overlay, print}` (the print window implements `engine::html_pdf::Printer`); `integrations::{argv, menu, tray, dock, autostart, notify, migrate, global_drag::{macos, windows, x11}, windows_shell::{send_to, context_menu}, linux::{file_managers, autostart}}`; `housekeeping`; `logging`; `selftest` entry point |
 
+*(Revision 2: the final module list is in PLAN.md §5 and Phases 3–8. There is no `html_pdf`, `epub::reader`,
+`epubprint` protocol or print window, and the engine does not use tokio.)*
+
 **Platform rule** (this replaces the Electron rule "only integrations branch on `process.platform`"): `cfg(target_os = …)` may appear only in:
 - `app::integrations`
 - `app::windows`
@@ -251,6 +318,9 @@ Node remains a **build-time** dependency (Vite, vitest, TypeScript, Tauri CLI). 
 - the native printers
 
 ### 5.4 Concurrency model
+
+*(Revision 2: superseded. The engine is synchronous — one thread per job, a `CancelToken` flag, one global thread-safe
+`Pdfium` — and only the Tauri commands use async, to move blocking work off the main thread.)*
 
 - **Runtime:** Tauri's tokio multi-thread runtime. Commands are `async fn`.
 - **CPU-heavy work** (decode, encode, resize, quantize, OCR, Typst compile, PDF rendering) runs in `spawn_blocking` or in a bounded rayon pool. It never runs on the main/UI thread.
@@ -265,6 +335,9 @@ Node remains a **build-time** dependency (Vite, vitest, TypeScript, Tauri CLI). 
 - **Main-thread work** (window creation, native print operations, tray changes) goes through `AppHandle::run_on_main_thread`.
 
 ### 5.5 TS ↔ Rust contracts (one source of truth)
+
+*(Revision 2: point 1 is kept with one change — the TypeScript files stay the source and `scripts/gen-registry.mjs`
+writes the JSON. Point 2 is replaced: no `ts-rs`; `core/src/types.rs` mirrors `types.ts` by hand.)*
 
 **The problem:** formats, tools, defaults and types are used by both the UI (TypeScript) and the backend (now Rust). Duplicating them would let the two sides drift.
 
@@ -404,7 +477,7 @@ Each subsection covers four things in turn:
 1. Register the single-instance plugin. Skip it with `--selftest`.
 2. Buffer macOS `RunEvent::Opened { urls }` events (✅ present in 2.12.1) until startup finishes.
 3. Install the app menu (macOS only, §8.5).
-4. Register the `kfile` and `epubprint` protocols.
+4. Register the `kfile` protocol. (`epubprint` was dropped with EPUB → PDF, D8.)
 5. Apply security hardening (§9).
 6. Run the Electron → Tauri migration (§8.10).
 7. Load settings and apply the theme.
@@ -889,50 +962,24 @@ Port `ffmpegArgs.ts`, `videoArgs.ts` and `audioArgs.ts` **verbatim** into `core:
 
 `pdfOps.test.ts` pinned a pdf-lib pooled-Buffer bug that cannot happen in Rust. Replace it with a test that a JPEG under 4 KB embeds correctly.
 
-### 7.17 HTML and text → PDF (replacing Chromium `printToPDF`) 🔬 S1, the highest risk
+### 7.17 Text → PDF (replacing Chromium `printToPDF`) — resolved in revision 2
 
-**Where `printToPDF` is used today**
-1. TXT → PDF, and TXT → JPG/PNG through that PDF.
-2. EPUB → PDF, in three modes:
-   - fixed layout: viewport-sized pages with zero margins
-   - reflow: the reader CSS injected as a *user* stylesheet
-   - pages: `@page` size and margin 16 mm
-3. The self-test fixture `scan.pdf`.
+**Where `printToPDF` was used:** TXT → PDF (and TXT → JPG/PNG through that PDF), EPUB → PDF, and the self-test fixture
+`scan.pdf`. EPUB → PDF is **removed** (D8), so only text remains and no HTML engine is needed in the back end.
 
-**Design:** an engine-side `trait Printer { fn html_to_pdf(&self, req) -> Result<Vec<u8>> }` plus a Typst renderer.
+**Design (implemented in PLAN.md Task 5.3):**
+- **Typst**, embedded through `typst-as-lib` 0.16 (feature `typst-kit-fonts`, **without** `packages`, so it can never
+  download anything) and `typst-pdf` 0.15.
+- One fixed template: page A4/Letter/A5 from the options, margins 16 mm left/right and 18 mm top/bottom, font family
+  (sans / serif / mono) and size in points (`TEXT_SIZE_PT`), every line kept as written (`white-space: pre-wrap`).
+  Very long words get invisible break points every 40 characters.
+- Fonts: the bundled Noto Sans / Serif / Sans Mono (OFL, fetched at build time into `resources/fonts`) first, then
+  system fonts for other scripts.
+- TXT → JPG/PNG renders every page of that PDF with PDFium (one picture per page).
 
-| Path | Primary | Fallback |
-|---|---|---|
-| **TXT → PDF/JPG/PNG** | **Typst** (embedded through `typst-as-lib` 0.16 or our own `World`). Build markup from the text options: font family (mono / serif / sans), size in points (`TEXT_SIZE_PT`), page size A4/Letter/A5, margins 18 mm × 16 mm, pre-wrapped lines, break anywhere. **Bundle the fonts** (Noto Sans / Serif / Sans Mono subsets covering Latin and Vietnamese, OFL) so the output is identical on every OS and offline. | Webview print of `textToHtml()`. |
-| **EPUB fixed layout** | **Fast path:** if each spine page is just one `<img>`/`<svg>` filling a viewport, place the image straight onto a viewport-sized PDF page with lopdf. No HTML engine is needed. | Webview print with zero margins at the viewport size (px ÷ 96 → inches). |
-| **EPUB reflow and pages modes** | **Native webview print per OS** in a hidden "print" webview: details below. | **An XHTML → Typst converter** for headings, paragraphs, lists, emphasis, images, simple tables and links. ⚠️ CSS-heavy books lose styling. |
+**The `scan.pdf` self-test fixture** is built with Typst (large text) → PDFium render → an image-only PDF.
 
-**Native print, common parts**
-- **Isolation:** extract the EPUB to the job's temp folder (zip-slip safe) and serve it over a custom `epubprint://` scheme. Every response carries the CSP `default-src epubprint: data:; script-src 'none'; connect-src 'none'`. This replaces Electron's `javascript:false` plus network blocking.
-- **Navigation:** `on_navigation` denies everything else.
-- **Reader CSS:** rewrite each chapter's `<head>` to append the reader CSS (§`readerCss`) **last**.
-  - ⚠️ It becomes an author stylesheet rather than a user stylesheet. The `!important` rules in `readerCss` still win in practice.
-- **Timing:** load, then wait 200 ms for fonts and images to settle (as today).
-- **One print at a time:** one hidden webview, reused for the whole job and destroyed afterwards.
-- **Assembly:** chapters are merged with lopdf, then `Title` is set.
-- **Page setup:** page size and margins are **always passed explicitly** (A4/Letter/A5 from the options, mm → inches). Nothing relies on CSS `@page`.
-
-**Native print, per OS**
-
-| OS | API | Details |
-|---|---|---|
-| Windows (WebView2) | `ICoreWebView2_7::PrintToPdf(path, settings)` via `with_webview` | Settings: `PageWidth`/`PageHeight` (inches), margins, `ShouldPrintBackgrounds = true`, `ShouldPrintHeaderAndFooter = false`. |
-| macOS (WKWebView, macOS 11+) | `printOperation(with: NSPrintInfo)` | Paper size and margins; horizontal pagination `.clip`, vertical `.automatic`; `jobDisposition = .save` plus a saving URL. Run it with `runOperationModal(for:…)` on the hidden window: the plain `run()` is reported to give **blank pages**. `createPDF` produces a single tall page, so it is only a last resort. |
-| Linux (WebKitGTK) | `WebKitPrintOperation` | `GtkPrintSettings` (printer "Print to File", `output-uri`, format pdf) plus `GtkPageSetup`; `webkit_print_operation_print()` (no dialog); wait for the `finished` or `failed` signal. Needs a display: use `xvfb` in CI. |
-
-**Acceptance**
-- Self-test cases on all three OSes:
-  - `convert.epub.book-pdf`: at least 2 pages
-  - `convert.epub.fixed-pdf`: exactly 2 landscape pages
-  - every `convert.text.*` case
-- A visual checklist with 3 real EPUBs: one CSS-heavy, one Vietnamese, one image-rich.
-
-**The `scan.pdf` self-test fixture** is rebuilt with Typst (large text) → pdfium render at 200 DPI → an image-only PDF. The same shape as today.
+**Acceptance:** every `convert.text.*` self-test case; the self-test text includes Vietnamese.
 
 ### 7.18 OCR (replacing tesseract.js) 🔬 S6
 
@@ -942,7 +989,7 @@ Port `ffmpegArgs.ts`, `videoArgs.ts` and `audioArgs.ts` **verbatim** into `core:
 
 **Language data**
 - `tessdata_fast` `eng` and `vie`, the same files as today, in `resources/tessdata`.
-- Plus Tesseract's `pdf.ttf` glyphless font, which the PDF renderer needs.
+- (Tesseract's `pdf.ttf` glyphless font is compiled into the engine instead; see below.)
 
 **Recognition**
 - Languages are joined as `eng+vie`.
@@ -951,14 +998,14 @@ Port `ffmpegArgs.ts`, `videoArgs.ts` and `audioArgs.ts` **verbatim** into `core:
 - The text is the UTF-8 result.
 - **One API instance per job, dropped afterwards** (it's memory-heavy).
 
-**Searchable PDF**
-- Use Tesseract's PDF renderer (C API `TessPDFRendererCreate`) for each page, then merge the pages.
-- 🔬 Check whether `tesseract-rs` exposes it; otherwise call it through its sys bindings.
-- **Fallback:** build each page ourselves from the image plus invisible text (render mode 3), positioned from the word boxes (`RIL_WORD`) and using the glyphless font.
+**Searchable PDF** *(revision 2: resolved)*
+- Tesseract's own PDF renderer **cannot be used**: `tesseract-rs` builds Leptonica without zlib and the renderer crashes.
+- Each page is built by us: the page JPEG plus invisible text (render mode 3) positioned from the TSV word boxes, using
+  Tesseract's glyphless font (`pdf.ttf`, embedded in the engine) with Identity-H encoding and a ToUnicode map.
 
 **Kept behaviour**
 - Progress detail "Reading page X of N".
-- The message 'No OCR language data found. Run "npm run fetch-binaries".'
+- The message about missing language data, reworded in revision 2 to 'No OCR language data found. Reinstall Alohamora.'
 - The fallback to `eng`.
 - The `--- Page N ---` text format.
 
@@ -973,21 +1020,13 @@ Three writers must produce Word-compatible files.
 | `page_images_to_docx` | One section per page, with the page size in twips (pt × 20) and zero margins; the image at 98% of page width and height (pt × 96 ÷ 72). |
 
 - **Metadata:** `creator = "Alohamora"`, plus the title.
-- **Choice:** try `docx-rs` 0.4.22 first.
+- **Choice** *(revision 2: our own writer was chosen and implemented)*: try `docx-rs` 0.4.22 first.
   - If it lacks per-section page sizes or numbering, write our own minimal DOCX: `[Content_Types].xml`, `_rels`, `document.xml`, `styles.xml`, `numbering.xml` and media, using `zip` and templates.
   - The DOCX output covers few features, so our own writer is a small, contained task.
 
-### 7.20 EPUB reader and writer (`epubReader.ts`, `epubWriter.ts`, `epubTemplates.ts`)
+### 7.20 EPUB writer (`epubWriter.ts`, `epubTemplates.ts`)
 
-**Reader**
-- Extracts with `zip`, protected against zip-slip.
-- Reads `container.xml`, then the OPF (`quick-xml`, namespace-insensitive).
-- The spine comes from the manifest IDs, keeping only files that exist.
-- **Fixed layout** is detected from the meta `rendition:layout = pre-paginated`.
-- **Title:** the OPF title, or the file name if there isn't one.
-- **Cover:** from `properties~=cover-image`, or `meta name=cover`.
-- `readEpubCover` works without extracting the whole book.
-- `readViewport` uses the same regex as today.
+**Reader:** removed with EPUB → PDF (D8). EPUB files are no longer accepted as input.
 
 **Writer**
 - The `mimetype` entry comes **first**, STORED, with **no extra field**. The self-test checks for `mimetype` at byte offset 30.
@@ -1302,21 +1341,24 @@ The development CSP also allows the Vite dev server.
 
 **Navigation:** allow only the app's own origin (`tauri://localhost` or `http://tauri.localhost`, plus `devUrl` in development); deny new windows. 🔬 Find the exact deny-new-window hook in 2.12.
 
-**Network**
-- ⚠️ Electron cancelled **every** http(s)/ws(s) request at the session level. Tauri has no equivalent, so the guarantee now rests on four things:
+**Network** *(revision 2: final mechanisms, PLAN.md §3)*
+- Electron cancelled **every** http(s)/ws(s) request at the session level. Tauri has no equivalent, so the guarantee
+  rests on these, all in place:
   1. **No remote content:** the app never loads or links anything from the internet.
-  2. **CSP:** `connect-src` and the other directives exclude http(s).
-  3. **No HTTP client in the Rust code:** `cargo-deny` bans reqwest, ureq, hyper client and similar crates. `tesseract-rs` downloads only at build time; the runtime never fetches.
-  4. **WebView2:** turn off SmartScreen reputation checks (`IsReputationCheckingRequired = false` via `with_webview`). 🔬 Find out what else WebView2 contacts. Its runtime updates are managed by the system, not by the app.
-- **Verify on each OS:**
-  - **Linux CI:** `strace -f -e trace=connect` during the self-test and an idle run must show no `AF_INET`/`AF_INET6` connections.
-  - **macOS and Windows:** a manual check with a firewall or network monitor.
+  2. **CSP:** only `'self'`, `data:`, `blob:`, `ipc:` and `kfile:` (plus their Windows `*.localhost` forms).
+  3. **No network code at run time:** no HTTP/TLS/WebSocket client crate among the runtime dependencies on any desktop
+     target, no socket APIs in our code, no `fetch`/`XMLHttpRequest`/`WebSocket`/remote URLs in the UI. Checked by
+     `npm run check:offline` in CI. (Build-only dependencies may download: `tesseract-rs` fetches sources while compiling.)
+  4. **WebView2:** browser arguments turn off SmartScreen, background networking, component updates, pings and domain
+     reliability on every window (`WEBVIEW2_ARGS`). Its runtime updates are managed by Windows, not by the app.
+  5. **Libraries:** Typst without its `packages` feature; Tesseract data only from the bundled `tessdata/`.
+  6. **Installer:** the NSIS setup embeds the WebView2 offline installer.
+- **Verified:** the whole self-test runs under `unshare -rn` (no network) on Linux CI. macOS and Windows: a manual check
+  with a network monitor (PLAN.md Appendix G).
 
 **Sidecars**
 - Argument arrays, never a shell. Rust's `std::process` quotes Windows command lines safely.
 - We never spawn `.bat`/`.cmd` files, so the BatBadBut class of bugs (CVE-2024-24576) does not apply.
-
-**EPUB content** is rendered with scripts off and no network (§7.17).
 
 **macOS hardened runtime:** Electron needed `allow-jit`, `allow-unsigned-executable-memory` and `disable-library-validation`. Tauri should need **none of them**. 🔬 Confirm during the notarization dry run (§12.5).
 
@@ -1332,7 +1374,6 @@ The development CSP also allows the Vite dev server.
 - No Node main process.
 - No pdf.js engine window.
 - PDFs are opened from a path; there's no full copy of the file into a renderer.
-- The print webview exists only during EPUB → PDF jobs.
 - The overlay is the one webview kept warm, for latency.
 - The main window is created lazily and can optionally be destroyed while hidden (§8.1).
 
@@ -1392,7 +1433,7 @@ Either is likely to roughly halve the 126 MB. Switching to an LGPL build would a
 | Installed size | `du` of the app bundle or install folder |
 | Download size | The size of the installer files |
 | Idle RSS | The sum over the **whole process tree** after 60 s |
-| Peak RSS during scenarios | 12 MP JPG → WebP; 1080p 60 s video compress; 100-page PDF → PNG at 300 DPI; 20-page OCR; 3-chapter EPUB → PDF |
+| Peak RSS during scenarios | 12 MP JPG → WebP; 1080p 60 s video compress; 100-page PDF → PNG at 300 DPI; 20-page OCR |
 | Cold start to tray | From a log timestamp |
 | Wheel latency | From a log timestamp |
 
@@ -1443,10 +1484,10 @@ A vitest script (`npm run golden`) writes `src/shared/__golden__/*.json`: pairs 
 
 ### 11.3 Self-test harness (`src/main/selftest/*` → `engine::selftest` + `app --selftest`)
 
-**Cases:** the same **123 case names** in the same groups (`av`, `image`, `text`, `pdf`, `tools.video`, `tools.audio`, `tools.image`, `tools.pdf`, `tools.subtitle`, `errors`), with the same requests and checks. `--only=<group|prefix>` behaves the same way.
+**Cases:** the same case names (**121**: the two EPUB → PDF cases are gone, D8) in the same groups (`av`, `image`, `text`, `pdf`, `tools.video`, `tools.audio`, `tools.image`, `tools.pdf`, `tools.subtitle`, `errors`), with the same requests and checks. `--only=<group|prefix>` behaves the same way.
 
 **Runtime**
-- The self-test runs **inside the app binary**: Tauri starts, but no UI windows are created. This is needed because EPUB → PDF may need a hidden print webview.
+- The self-test runs **inside the app binary** (`--selftest`), headless, before any window is created. The engine also has a stand-alone runner (`cargo run -p alohamora-engine --example selftest`) used during development.
 - `report.json` keeps the format `{summary, results[{name, status, ms, info}]}` and the same locations:
   - development: `.selftest/`
   - packaged: `<temp>/alohamora-selftest`
@@ -1495,7 +1536,7 @@ These come from the "needs a human" items in `PROGRESS.md`, plus new ones:
 - notifications
 - sounds
 - video preview playback and **seeking** (WebKitGTK in particular)
-- visual review of EPUB → PDF and TXT → PDF
+- visual review of TXT → PDF
 - a keyboard-only walkthrough
 - reduced motion
 - the overlay over full-screen apps and macOS Spaces
@@ -1711,7 +1752,7 @@ The triples are `x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, `x86_64-apple-
 | **P4 — First spin (M1 parity)** | Native drop (§8.3), overlay placement and flows, the `kfile` protocol and media previews, thumbnails, `inspect`, pointer-event reorder, caption buttons. | Drop → wheel → convert → Done works on every OS; previews play; the ≤ 150 ms wheel budget holds. |
 | **P5 — Images** | §7.14 engine; image converters and the 9 image tools; image preview operations; EXIF read and write. | `image` and `tools.image` groups green; S5 parity report reviewed. |
 | **P6 — PDF, DOCX, EPUB writer, OCR** | pdfium actor, lopdf operations, the 8 PDF tools, PDF → images/TXT/DOCX/EPUB, the DOCX writers, the EPUB writer, OCR. | `pdf` (except EPUB → PDF), `tools.pdf` and `tools.subtitle` green. |
-| **P7 — HTML/text → PDF** | Typst TXT path; per-OS printers or the fallback chosen in S1; EPUB → PDF. | `text` group and the EPUB cases green; visual checklist signed off. |
+| **P7 — Text → PDF** | Typst TXT path. *(Revision 2: EPUB → PDF and the per-OS printers are dropped, D8.)* | `text` group green; visual checklist signed off. |
 | **P8 — Desktop integration** | Tray, menus, Dock; single instance and argv; Open With; Send To; verb; Linux menus; autostart; global drag (helper and poller); notifications; Electron → Tauri migration; housekeeping. | The manual checklist (§11.5) passes per OS; full self-test is green with the same pass counts as Electron. |
 | **P9 — Packaging, signing, budgets** | Platform configs; NSIS hooks; WebView2 modes; portable zip; AppImage/.deb; signing and notarization pipeline; rewritten notices and `cargo-deny`; measurement harness run. | Signed and notarized artifacts install and launch on clean machines; **§3.3 budgets met** (or exceptions recorded and accepted). |
 | **P10 — Cutover** | Remove Electron (`src/main`, `src/preload`, `electron*` configs and dependencies, `asar` scripts); move the Electron docs to `docs/electron/`; update the README, notices and CI; rename `rewrite/` docs as wanted. | One shell remains; CI is green; release candidate tagged. |
@@ -1722,7 +1763,7 @@ The triples are `x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, `x86_64-apple-
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| EPUB → PDF fidelity drops without Chromium's `printToPDF` | High | Medium | S1 first; per-OS native print; Typst fallback; image fast path for fixed layout; acceptance by self-test plus visual checklist. ⚠️ |
+| *(void since D8)* EPUB → PDF fidelity drops without Chromium's `printToPDF` | — | — | S1 first; per-OS native print; Typst fallback; image fast path for fixed layout; acceptance by self-test plus visual checklist. ⚠️ |
 | WebKitGTK media (codecs and GStreamer) and custom-scheme seeking | Medium | Medium | `canPlayType`-driven proxies; GStreamer in the AppImage; loopback fallback (S3). ⚠️ |
 | Image-output differences from libvips (colour, sharpness, file sizes) | Medium | Medium | Calibration in S5; differential testing; libvips bindings as a contained fallback. |
 | pdfium text runs differ from pdf.js, changing the reflow output | Medium | Medium | S4; tune the run grouping; golden reflow fixtures. |
@@ -1739,25 +1780,25 @@ The triples are `x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, `x86_64-apple-
 
 ---
 
-## 15. Open decisions (defaults chosen; spikes may change them)
+## 15. Open decisions (defaults chosen; resolved in revision 2)
 
-| # | Decision | Default | Revisit after |
-|---|---|---|---|
-| Q1 | Windows title bar | Custom React caption buttons (`decorations: false`). The alternative is native decorations, which add a second bar. `tauri-plugin-decorum` was last released in 2024, so not that. | P4 review |
-| Q2 | EPUB → PDF engine | Native webview print per OS, with Typst as the fallback | S1 |
-| Q3 | Image stack | Pure-Rust codecs, plus libheif (dynamic) and libwebp | S5 |
-| Q4 | AVIF decode | FFmpeg fallback (no dav1d build) | S5 |
-| Q5 | Collage "attention" crop | `smartcrop2` | S5 |
-| Q6 | DOCX writer | `docx-rs`; our own writer if sections or numbering are missing | P6 |
-| Q7 | Type generation | `ts-rs` (stable); not `tauri-specta` (RC) | P2 |
-| Q8 | Destroy the main webview while hidden in the tray | Off; on if S9 shows a large win | S9 / P9 |
-| Q9 | Notification click-to-reveal | Accept the loss | P8 |
-| Q10 | Kabooks-era migration code | Fold into the Electron → Tauri migration; delete one release later | P8 |
-| Q11 | Linux arm64 in CI | Optional job (`ubuntu-22.04-arm`) | P1 |
-| Q12 | Portable Windows build | Portable `.zip` | P9 |
-| Q13 | macOS overlay: plain NSWindow with level tweaks, or `tauri-nspanel` | Plain plus objc2 calls | S2 |
-| Q14 | Global drag on Windows/X11 | Our own poller | S8 |
-| Q15 | Login item on Windows | `tauri-plugin-autostart` | P8 |
+| # | Decision | Default | Revisit after | Resolution (revision 2) |
+|---|---|---|---|---|
+| Q1 | Windows title bar | Custom React caption buttons (`decorations: false`). The alternative is native decorations, which add a second bar. `tauri-plugin-decorum` was last released in 2024, so not that. | P4 review | Custom caption buttons, as proposed. |
+| Q2 | EPUB → PDF engine | Native webview print per OS, with Typst as the fallback | S1 | Void: EPUB → PDF removed (D8). |
+| Q3 | Image stack | Pure-Rust codecs, plus libheif (dynamic) and libwebp | S5 | Pure-Rust codecs + libwebp; **no libheif** (HEIC decoded by FFmpeg). |
+| Q4 | AVIF decode | FFmpeg fallback (no dav1d build) | S5 | FFmpeg. |
+| Q5 | Collage "attention" crop | `smartcrop2` | S5 | Centre crop (smartcrop2 not used). |
+| Q6 | DOCX writer | `docx-rs`; our own writer if sections or numbering are missing | P6 | Our own writer. |
+| Q7 | Type generation | `ts-rs` (stable); not `tauri-specta` (RC) | P2 | No type generation; hand-written `types.rs`, registry JSON generated from TypeScript. |
+| Q8 | Destroy the main webview while hidden in the tray | Off; on if S9 shows a large win | S9 / P9 | Off (not implemented); revisit after measuring. |
+| Q9 | Notification click-to-reveal | Accept the loss | P8 | Loss accepted. |
+| Q10 | Kabooks-era migration code | Fold into the Electron → Tauri migration; delete one release later | P8 | Folded in (`integrations/legacy.rs`). |
+| Q11 | Linux arm64 in CI | Optional job (`ubuntu-22.04-arm`) | P1 | Not added; the CI matrix has Windows x64, macOS arm64 + x64, Linux x64. |
+| Q12 | Portable Windows build | Portable `.zip` | P9 | No portable build (Tauri has no portable target); see PLAN.md Appendix F. |
+| Q13 | macOS overlay: plain NSWindow with level tweaks, or `tauri-nspanel` | Plain plus objc2 calls | S2 | Plain NSWindow + objc2 calls. |
+| Q14 | Global drag on Windows/X11 | Our own poller | S8 | Own poller. |
+| Q15 | Login item on Windows | `tauri-plugin-autostart` | P8 | `tauri-plugin-autostart`. |
 
 ---
 
@@ -1794,10 +1835,10 @@ The triples are `x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, `x86_64-apple-
 | `src/main/engines/imageMetaEdit.ts` | `engine/src/image/exif.rs` | §7.14 |
 | `src/main/engines/pdfEngine.ts` + `windows/engineWindow.ts` + `renderer/src/engine/*` + `preload/engine.ts` + `renderer/engine.html` | `engine/src/pdf/actor.rs` | §7.15. The engine window is removed. |
 | `src/main/engines/pdfOps.ts` (+ test), `pdfCompress.ts` | `engine/src/pdf/{edit,create,compress}.rs` | §7.16 |
-| `src/main/engines/print.ts` | `engine/src/html_pdf/{mod,typst}.rs` + `app/src/windows/print/{windows,macos,linux}.rs` | §7.17 |
+| `src/main/engines/print.ts` | `engine/src/text_pdf.rs` (Typst; no print windows since D8) | §7.17 |
 | `src/main/engines/ocr.ts` | `engine/src/ocr.rs` | §7.18 |
 | `src/main/engines/docxWriter.ts` | `engine/src/docx.rs` | §7.19 |
-| `src/main/engines/epubReader.ts`, `epubWriter.ts`, `epubTemplates.ts` | `engine/src/epub/{reader,writer,templates}.rs` | §7.20 |
+| `src/main/engines/epubReader.ts`, `epubWriter.ts`, `epubTemplates.ts` | `engine/src/epub.rs` (writer only; the reader is dropped, D8) | §7.20 |
 | `src/main/engines/bytes.ts` | — (dropped) | pdf-lib workaround |
 | `src/main/jobs/{context,execute,queue}.ts` | `engine/src/jobs/{context,execute,queue}.rs` | §7.11 |
 | `src/main/tools/**` (36 runners + `common.ts` files) | `engine/src/tools/{video,audio,image,pdf,subtitle}/*.rs` | §7.13 |
@@ -1828,6 +1869,10 @@ The triples are `x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, `x86_64-apple-
 ---
 
 ## Appendix B. Crate shortlist (versions from crates.io on 2026-10-07)
+
+*(Revision 2: not used in the end — `libheif-rs`, `ts-rs`, `fast_image_resize`, `smartcrop2`, `quantette`, `moxcms`,
+`little_exif`, `docx-rs`, `quick-xml`, `cargo-deny`/`cargo-about`. Added: `color_quant`, `png`, `typst-pdf`. The final list
+is PLAN.md §2.)*
 
 | Crate | Version | Licence | Use |
 |---|---|---|---|
@@ -1951,6 +1996,10 @@ The triples are `x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, `x86_64-apple-
 ---
 
 ## Appendix D. User-facing message catalogue (keep byte for byte)
+
+*(Revision 2: the catalogue of the Rust build is PLAN.md Appendix C. Changes against the list below: the four EPUB input
+messages are gone with EPUB → PDF (D8); the OCR "no data" message says "Reinstall Alohamora."; "This OCR engine version
+cannot write PDFs" no longer exists because the searchable PDF is built by the app.)*
 
 **Errors** (raised as `UserError` or `ToolError`)
 
