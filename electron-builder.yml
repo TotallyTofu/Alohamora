@@ -68,7 +68,9 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-  # identity: '-'          # uncomment for ad-hoc signing when you have no Developer ID (see Task 13.6)
+  # identity: '-'          # ad-hoc signing when you have no Developer ID (see Task 13.6). Needed for a usable build on
+  #                        # Apple Silicon: CSC_IDENTITY_AUTO_DISCOVERY=false alone leaves an INVALID signature.
+  #                        # Or pass it per build: npx electron-builder --mac -c.mac.identity=- (README, "Building for macOS")
   extraResources:
     - from: resources/bin/darwin-${arch}
       to: bin
