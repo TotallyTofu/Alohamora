@@ -13,6 +13,9 @@ opens a network connection.
 The rewrite from Electron is described in `rewrite/OUTLINE.md` (design) and `rewrite/PLAN.md` (step-by-step build plan);
 progress is logged in `rewrite/PROGRESS.md`.
 
+Alohamora's own code is released under the [MIT License](LICENSE). The bundled third-party programs keep their own licences
+(FFmpeg is GPL): see [Licences](#licences).
+
 ## Running it from source
 
 Requirements (details per OS in `rewrite/PLAN.md` Task 0.1): Git, Node 22.18+, Rust (installed by `rustup`; the version is
@@ -63,7 +66,7 @@ Each OS builds on itself: `npm run build` (after `npm run fetch-binaries`).
 | OS | Output |
 |---|---|
 | Windows | NSIS installer (per-user, includes the WebView2 offline installer, so it installs without internet) |
-| macOS | `.app` and `.dmg`; ad-hoc signed unless signing secrets are set (see `rewrite/PLAN.md` Task 9.3) |
+| macOS | `.app` and `.dmg`; ad-hoc signed and not notarized unless signing secrets are set (see `rewrite/PLAN.md` Task 9.3). Tried by hand on Apple Silicon only; the Intel build is made by CI but has not been tried by hand |
 | Linux | `.deb`, `.rpm` and AppImage |
 
 A packaged app can test itself and writes a JSON report:
@@ -73,6 +76,9 @@ A packaged app can test itself and writes a JSON report:
 | Windows | `alohamora.exe --selftest` | `%TEMP%\alohamora-selftest\report.json` |
 | macOS | `Alohamora.app/Contents/MacOS/alohamora --selftest` | `$TMPDIR/alohamora-selftest/report.json` |
 | Linux | `alohamora --selftest` | `/tmp/alohamora-selftest/report.json` |
+
+The self-test reuses any fixture files it already finds in its output folder. If results look wrong after an upgrade, run it
+again with a fresh folder: `--selftest --out=<empty folder>`.
 
 `.github/workflows/build.yml` builds, tests and self-tests all platforms (on Linux with networking switched off).
 
@@ -90,5 +96,12 @@ Troubleshooting tips are in `rewrite/PLAN.md` Appendix D.
 
 ## Licences
 
-See `THIRD_PARTY_NOTICES.md` (components) and `THIRD_PARTY_CRATES.md` (every Rust crate and its licence). The bundled FFmpeg
-builds are GPL; read the notices before distributing Alohamora.
+Alohamora's own source code is licensed under the [MIT License](LICENSE).
+
+MIT covers only Alohamora's code. The app bundles and uses third-party components that keep their own licences: see
+`THIRD_PARTY_NOTICES.md` (components) and `THIRD_PARTY_CRATES.md` (every Rust crate and its licence).
+
+**FFmpeg is GPL.** The bundled FFmpeg builds include the x264 and x265 encoders and are licensed under the GPL; the MIT licence
+does not change that. Alohamora runs FFmpeg as a separate program and does not link against it. Before you distribute
+installers publicly, either ship the GPL notice and an offer of the corresponding source code, or switch to an LGPL-only FFmpeg
+build. The details are in the "FFmpeg and the GPL" section of `THIRD_PARTY_NOTICES.md`.

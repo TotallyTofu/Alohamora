@@ -4,7 +4,7 @@
   "version": "0.2.0",
   "description": "Offline file converter with a spinning wheel UI",
   "author": "Alohamora contributors",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {

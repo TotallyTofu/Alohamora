@@ -1,7 +1,8 @@
 # Third-party notices
 
-Alohamora is built from the open-source components below. Each keeps its own licence. Alohamora runs entirely on your computer
-and contacts no servers. Every Rust crate compiled into the app, with its licence, is listed in `THIRD_PARTY_CRATES.md`.
+Alohamora's own code is licensed under the MIT License (see `LICENSE`). It is built from the open-source components below, and
+each keeps its own licence; MIT does not change them. Alohamora runs entirely on your computer and contacts no servers. Every
+Rust crate compiled into the app, with its licence, is listed in `THIRD_PARTY_CRATES.md`.
 
 | Component | Licence | Note |
 |---|---|---|
@@ -17,7 +18,7 @@ and contacts no servers. Every Rust crate compiled into the app, with its licenc
 | libwebp | BSD-3-Clause | WebP encoding |
 | rav1e, ravif | BSD-2-Clause | AVIF encoding |
 | lopdf, kamadak-exif, img-parts, zip | MIT | PDF writing, EXIF, metadata blocks, DOCX/EPUB packaging |
-| alohamora-drag-helper (macOS) | Alohamora's own code | Reads only the drag pasteboard and modifier-key state |
+| alohamora-drag-helper (macOS) | Alohamora's own code (MIT) | Reads only the drag pasteboard and modifier-key state |
 | heif-enc (optional, not bundled) | LGPL-3.0 + x265 GPL-2.0 | Only if you install it yourself for HEIC output |
 | React, zustand | MIT | User interface |
 | lucide-react | ISC | Icons |
