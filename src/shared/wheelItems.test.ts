@@ -55,8 +55,8 @@ describe('buildWheel (convert)', () => {
   });
 
   it('files already in the only target format are skipped', () => {
-    const epub = fi('/a/b.epub', 'epub', 'epub');
-    expect(buildWheel([epub], 'convert', makeCaps()).items.map((i) => i.target)).toEqual(['pdf']);
+    const srt = fi('/a/b.srt', 'srt', 'subtitle');
+    expect(buildWheel([srt], 'convert', makeCaps()).items.map((i) => i.target)).toEqual(['vtt', 'txt']);
     expect(buildWheel([pdf], 'convert', makeCaps()).items.map((i) => i.target)).not.toContain('pdf');
   });
 });

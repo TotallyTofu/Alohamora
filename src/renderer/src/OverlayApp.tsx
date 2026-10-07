@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { api } from './lib/api';
-import { pathsFromDataTransfer } from './lib/dnd';
+import { isOver, useNativeDrop } from './lib/nativeDrop';
 import { sizeForStage } from './overlay/sizes';
 import { useOverlay, type Stage } from './overlay/store';
 import { DoneStage } from './overlay/stages/DoneStage';
@@ -25,9 +25,8 @@ function StageView({ stage }: { stage: Stage }) {
   }
 }
 
-/** A drop on the empty part of the overlay behaves like a drop on the hub. Wheel drops are handled (and prevented) by the wheel. */
-function dropOutsideWheel(dt: DataTransfer): void {
-  const paths = pathsFromDataTransfer(dt);
+/** A drop on the empty part of the overlay behaves like a drop on the hub. Drops on the wheel are handled by the wheel. */
+function dropOutsideWheel(paths: string[]): void {
   if (paths.length === 0) return;
   void api.overlayDropped(paths).then((files) => useOverlay.getState().dropFinished(files));
 }
@@ -53,17 +52,20 @@ export function OverlayApp() {
       if (!s.dragging && AUTO_CLOSE_ON_BLUR.includes(s.stage.name)) void api.closeOverlay();
     };
     window.addEventListener('blur', onBlur);
+    void api.uiReady();             // listeners exist: the backend may now send overlay events
     return () => { offs.forEach((o) => o()); window.removeEventListener('blur', onBlur); };
   }, []);
+
+  useNativeDrop((e, paths) => {
+    if (e.phase === 'drop' && !isOver(e.x, e.y, '.wheel')) dropOutsideWheel(paths);
+  });
 
   const catKey = files.map((f) => f.category).join(",");   // deep-inspection updates must not re-place the window
   useEffect(() => { void api.resizeOverlay(sizeForStage(stage, useOverlay.getState().files)); }, [stage, catKey]);
 
   return (
     <div className="overlay"
-      onMouseDown={(e) => { if (e.target === e.currentTarget && stage.name === 'wheel' && !useOverlay.getState().dragging) void api.closeOverlay(); }}
-      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}   // never 'move': the original must stay
-      onDrop={(e) => { if (!e.defaultPrevented) { e.preventDefault(); dropOutsideWheel(e.dataTransfer); } }}>
+      onMouseDown={(e) => { if (e.target === e.currentTarget && stage.name === 'wheel' && !useOverlay.getState().dragging) void api.closeOverlay(); }}>
       <StageView stage={stage} />
     </div>
   );

@@ -6,7 +6,7 @@ export interface FormatInfo {
   category: Category;
   exts: string[];          // first = canonical output extension
   mimes: string[];
-  input: boolean;          // false = output-only (DOCX)
+  input: boolean;          // false = output-only (DOCX, EPUB)
 }
 
 export const FORMATS: Record<Fmt, FormatInfo> = {
@@ -38,7 +38,7 @@ export const FORMATS: Record<Fmt, FormatInfo> = {
     fmt: 'docx', label: 'DOCX', category: 'pdf', exts: ['docx'],
     mimes: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'], input: false
   },
-  epub: { fmt: 'epub', label: 'EPUB', category: 'epub', exts: ['epub'], mimes: ['application/epub+zip'], input: true },
+  epub: { fmt: 'epub', label: 'EPUB', category: 'pdf', exts: ['epub'], mimes: ['application/epub+zip'], input: false },
   txt: { fmt: 'txt', label: 'TXT', category: 'text', exts: ['txt', 'text', 'md', 'markdown', 'log', 'csv'], mimes: ['text/plain', 'text/markdown', 'text/csv'], input: true },
   srt: { fmt: 'srt', label: 'SRT', category: 'subtitle', exts: ['srt'], mimes: ['application/x-subrip', 'text/srt'], input: true },
   vtt: { fmt: 'vtt', label: 'VTT', category: 'subtitle', exts: ['vtt'], mimes: ['text/vtt'], input: true }
@@ -80,10 +80,10 @@ export function outputExt(fmt: Fmt): string {
   return FORMATS[fmt].exts[0];
 }
 
-export const CATEGORY_ORDER: Category[] = ['image', 'audio', 'video', 'pdf', 'epub', 'text', 'subtitle'];
+export const CATEGORY_ORDER: Category[] = ['image', 'audio', 'video', 'pdf', 'text', 'subtitle'];
 
 export const CATEGORY_LABEL: Record<Category, string> = {
-  image: 'Images', audio: 'Audio', video: 'Video', pdf: 'PDF', epub: 'EPUB', text: 'Text', subtitle: 'Subtitles'
+  image: 'Images', audio: 'Audio', video: 'Video', pdf: 'PDF', text: 'Text', subtitle: 'Subtitles'
 };
 
 export const CATEGORY_NOTE: Record<Category, string> = {
@@ -91,7 +91,6 @@ export const CATEGORY_NOTE: Record<Category, string> = {
   audio: '',
   video: 'MP3 audio export',
   pdf: 'All pages · images at 300 DPI',
-  epub: 'Adjustable text or preserved pages',
   text: 'UTF-8 text',
   subtitle: ''
 };
@@ -102,7 +101,6 @@ export const CONVERT_TARGETS: Record<Category, Fmt[]> = {
   audio: ['mp3', 'm4a', 'wav', 'flac', 'ogg', 'opus', 'aiff', 'wma'],
   video: ['mp4', 'mov', 'mkv', 'webm', 'avi', 'wmv', 'gif', 'mp3'],
   pdf: ['docx', 'jpg', 'png', 'epub', 'txt'],
-  epub: ['pdf'],
   text: ['pdf', 'jpg', 'png', 'srt', 'vtt'],
   subtitle: ['srt', 'vtt', 'txt']
 };
@@ -128,8 +126,8 @@ export const REQUIRED_ENCODERS: Partial<Record<Fmt, string[]>> = {
 };
 
 /** Conversions that show a Step-2 options card by default. */
-const OPTION_PAIRS: Array<[Category, Fmt]> = [
-  ['image', 'svg'], ['video', 'gif'], ['pdf', 'docx'], ['pdf', 'epub'], ['epub', 'pdf'],
+export const OPTION_PAIRS: Array<[Category, Fmt]> = [
+  ['image', 'svg'], ['video', 'gif'], ['pdf', 'docx'], ['pdf', 'epub'],
   ['text', 'pdf'], ['text', 'jpg'], ['text', 'png'], ['text', 'srt'], ['text', 'vtt']
 ];
 

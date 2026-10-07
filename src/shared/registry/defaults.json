@@ -1,0 +1,255 @@
+{
+  "settings": {
+    "outputMode": "same-folder",
+    "customOutputDir": null,
+    "theme": "system",
+    "highContrastAccent": false,
+    "imageQuality": 85,
+    "videoCrf": 23,
+    "audioBitrateKbps": 192,
+    "pdfDpi": 300,
+    "ocrLanguages": [
+      "eng"
+    ],
+    "maxConcurrentJobs": 2,
+    "hardwareVideo": true,
+    "notifyWhenDone": true,
+    "revealWhenDone": false,
+    "globalDragWheel": false,
+    "sendToMenu": false,
+    "contextMenu": false,
+    "launchAtLogin": false,
+    "closeToTray": true,
+    "showInDock": true,
+    "sounds": true
+  },
+  "convert": {
+    "quality": 85,
+    "svgMode": "trace",
+    "svgColors": 16,
+    "gifWidth": 480,
+    "gifFps": 12,
+    "docMode": "reflow",
+    "ocr": "auto",
+    "textSize": "medium",
+    "font": "original",
+    "pageSize": "a4",
+    "imageDpi": 150,
+    "cueTiming": "reading",
+    "secondsPerCue": 3
+  },
+  "edit": {
+    "exposure": 0,
+    "brightness": 0,
+    "contrast": 0,
+    "saturation": 0,
+    "warmth": 0,
+    "hue": 0,
+    "detail": 0,
+    "blur": 0,
+    "vignette": 0,
+    "effect": "none"
+  },
+  "tools": {
+    "video.compress": {
+      "preset": "balanced",
+      "maxHeight": 0,
+      "codec": "h264",
+      "targetSizeMb": 0
+    },
+    "video.metadata": {
+      "removeAll": false,
+      "tags": {},
+      "coverPath": null,
+      "removeCover": false
+    },
+    "video.mute": {},
+    "video.trim": {
+      "startSec": 0,
+      "endSec": 0,
+      "precise": false
+    },
+    "video.crop": {
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1,
+        "h": 1
+      }
+    },
+    "video.speed": {
+      "factor": 2,
+      "keepAudio": true
+    },
+    "video.snapshot": {
+      "mode": "single",
+      "timeSec": 0,
+      "everySec": 5,
+      "format": "png"
+    },
+    "video.split": {
+      "mode": "parts",
+      "times": [],
+      "parts": 2,
+      "everySec": 60,
+      "precise": false
+    },
+    "video.redact": {
+      "regions": []
+    },
+    "video.join": {
+      "order": []
+    },
+    "audio.compress": {
+      "bitrateKbps": 128,
+      "format": "keep",
+      "mono": false
+    },
+    "audio.normalize": {
+      "target": -16,
+      "truePeak": -1.5
+    },
+    "audio.trim": {
+      "startSec": 0,
+      "endSec": 0,
+      "fadeInSec": 0,
+      "fadeOutSec": 0
+    },
+    "audio.channels": {
+      "mode": "mono"
+    },
+    "audio.visualize": {
+      "kind": "waveform-png",
+      "width": 1920,
+      "height": 480,
+      "color": "#FF5A1F",
+      "background": "#FFFFFF"
+    },
+    "audio.bleep": {
+      "ranges": [],
+      "sound": "beep",
+      "frequency": 1000
+    },
+    "audio.metadata": {
+      "removeAll": false,
+      "tags": {},
+      "coverPath": null,
+      "removeCover": false
+    },
+    "audio.join": {
+      "order": []
+    },
+    "image.compress": {
+      "quality": 75,
+      "maxSide": 0,
+      "format": "keep",
+      "stripMetadata": true
+    },
+    "image.resize": {
+      "mode": "percent",
+      "percent": 50,
+      "width": 0,
+      "height": 0,
+      "keepAspect": true
+    },
+    "image.crop": {
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1,
+        "h": 1
+      },
+      "rotate": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "image.edit": {
+      "exposure": 0,
+      "brightness": 0,
+      "contrast": 0,
+      "saturation": 0,
+      "warmth": 0,
+      "hue": 0,
+      "detail": 0,
+      "blur": 0,
+      "vignette": 0,
+      "effect": "none"
+    },
+    "image.background": {
+      "kind": "gradient",
+      "color": "#F3F3F2",
+      "gradient": [
+        "#FFB38A",
+        "#FF5A1F"
+      ],
+      "angle": 135,
+      "paddingPct": 8,
+      "radiusPct": 3,
+      "shadow": true,
+      "aspect": "auto"
+    },
+    "image.redact": {
+      "regions": []
+    },
+    "image.metadata": {
+      "action": "remove-all",
+      "fields": {}
+    },
+    "image.collage": {
+      "layout": "grid",
+      "order": [],
+      "gap": 12,
+      "background": "#FFFFFF",
+      "radius": 8,
+      "width": 2048,
+      "fit": "cover"
+    },
+    "image.pdf": {
+      "order": [],
+      "pageSize": "a4",
+      "margin": "small",
+      "combine": true
+    },
+    "pdf.compress": {
+      "level": "balanced"
+    },
+    "pdf.merge": {
+      "order": []
+    },
+    "pdf.split": {
+      "mode": "each",
+      "every": 1,
+      "ranges": ""
+    },
+    "pdf.organize": {
+      "pages": []
+    },
+    "pdf.images": {
+      "format": "png",
+      "dpi": 300,
+      "ranges": "",
+      "quality": 90
+    },
+    "pdf.ocr": {
+      "languages": [
+        "eng"
+      ],
+      "output": "txt",
+      "ranges": ""
+    },
+    "pdf.word": {
+      "mode": "reflow",
+      "ocr": "auto"
+    },
+    "pdf.metadata": {
+      "removeAll": false,
+      "title": "",
+      "author": "",
+      "subject": "",
+      "keywords": ""
+    },
+    "subtitle.shift": {
+      "offsetMs": 0
+    }
+  }
+}

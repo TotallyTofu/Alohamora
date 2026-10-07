@@ -41,8 +41,16 @@ export function playClick(): void {
   } catch { /* no audio device: stay silent */ }
 }
 
+/** WebKit (macOS, Linux) starts audio only after a user gesture: create/resume the context on the first click or key. */
+function unlockOnFirstGesture(): void {
+  const unlock = (): void => { try { engine(); } catch { /* no audio device: stay silent */ } };
+  window.addEventListener('pointerdown', unlock, { once: true, capture: true });
+  window.addEventListener('keydown', unlock, { once: true, capture: true });
+}
+
 /** Follow the "Sound effects" setting (both windows call this once at start-up). */
 export async function initSound(): Promise<void> {
+  unlockOnFirstGesture();
   setSoundsEnabled((await api.getSettings()).sounds);
   api.onSettings((s) => setSoundsEnabled(s.sounds));
 }

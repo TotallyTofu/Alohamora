@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from 'react';
 import type { PdfOrganizeOptions } from '@shared/toolOptions';
 import { Button, IconButton } from '../../components/Button';
 import { Panel } from '../../components/Panel';
@@ -48,6 +48,12 @@ export function OrganizePanel({ files, onApply, onBack, onClose }: ToolPanelProp
     setPages((cur) => { const next = [...cur]; const [m] = next.splice(from, 1); next.splice(to, 0, m); return next; });
     dragging.current = to;
   };
+  /** Pointer-based drag (HTML5 drag & drop is unavailable with Tauri's native file-drop handler). */
+  const onPointerMove = (e: PointerEvent): void => {
+    if (dragging.current === null) return;
+    const card = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('.pagecard');
+    if (card) reorder(Number(card.dataset.index));
+  };
 
   return (
     <Panel title="Organize pages" onBack={onBack} onClose={onClose} applyLabel="Save PDF" applyDisabled={!changed || pages.length === 0}
@@ -63,13 +69,18 @@ export function OrganizePanel({ files, onApply, onBack, onClose }: ToolPanelProp
       {thumbs === null && <p className="card-note">Loading pages…</p>}
       <div className="pagegrid" role="listbox" aria-label="Pages" aria-multiselectable="true">
         {pages.map((p, i) => (
-          <div key={p.src} role="option" aria-selected={selected.has(p.src)} tabIndex={0} draggable
+          <div key={p.src} role="option" aria-selected={selected.has(p.src)} tabIndex={0} data-index={i}
             className={`pagecard${selected.has(p.src) ? ' is-selected' : ''}`}
             onClick={(e) => click(e, i)}
             onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setSelected(new Set([p.src])); } }}
-            onDragStart={(e) => { dragging.current = i; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); }}
-            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; reorder(i); }}
-            onDragEnd={() => { dragging.current = null; }}>
+            onPointerDown={(e) => {
+              if (e.button !== 0) return;
+              dragging.current = i;
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={onPointerMove}
+            onPointerUp={() => { dragging.current = null; }}
+            onPointerCancel={() => { dragging.current = null; }}>
             <div className="pagecard__thumb">
               {thumbs?.[p.src] && (
                 <img src={thumbs[p.src]} alt={`Page ${p.src + 1}`} draggable={false}

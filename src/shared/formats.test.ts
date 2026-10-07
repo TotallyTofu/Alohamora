@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CONVERT_TARGETS, extOf, fmtFromExt, fmtFromMime, fmtFromPath, needsOptions, outputExt,
+  CATEGORY_ORDER, CONVERT_TARGETS, extOf, fmtFromExt, fmtFromMime, fmtFromPath, FORMATS, needsOptions, outputExt,
   targetAvailable
 } from './formats';
 import { makeCaps } from './testCaps';
@@ -60,7 +60,7 @@ describe('needsOptions', () => {
     expect(needsOptions('video', 'mp4')).toBe(false);
     expect(needsOptions('image', 'svg')).toBe(true);
     expect(needsOptions('pdf', 'docx')).toBe(true);
-    expect(needsOptions('epub', 'pdf')).toBe(true);
+    expect(needsOptions('pdf', 'epub')).toBe(true);
     expect(needsOptions('text', 'srt')).toBe(true);
     expect(needsOptions('image', 'png')).toBe(false);
   });
@@ -68,7 +68,16 @@ describe('needsOptions', () => {
 
 describe('CONVERT_TARGETS', () => {
   it('never offers a category its own non-convertible formats', () => {
-    expect(CONVERT_TARGETS.epub).toEqual(['pdf']);
+    expect(CONVERT_TARGETS.pdf).toContain('epub');
     expect(CONVERT_TARGETS.image).toContain('docx');
+  });
+});
+
+describe('EPUB', () => {
+  it('is an output of PDF only (EPUB → PDF was removed)', () => {
+    expect(FORMATS.epub.input).toBe(false);
+    expect(FORMATS.epub.category).toBe('pdf');
+    expect(fmtFromPath('book.epub')).toBeNull();
+    expect(CATEGORY_ORDER).not.toContain('epub' as never);
   });
 });

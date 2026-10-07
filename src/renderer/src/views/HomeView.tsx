@@ -7,7 +7,7 @@ import { DropZone } from '../components/DropZone';
 import { Keycap } from '../components/Keycap';
 import { Wheel } from '../components/Wheel/Wheel';
 import { api } from '../lib/api';
-import { pathsFromDataTransfer } from '../lib/dnd';
+import { useNativeDrop } from '../lib/nativeDrop';
 import { altKeyName, altKeycap } from '../lib/platform';
 import { ActivityList } from './ActivityList';
 
@@ -46,21 +46,16 @@ export function HomeView() {
   const ti = useCycle(toolItems.length, 1200, 0);
   const alt = altKeycap();
 
-  const onDrop = (e: React.DragEvent): void => {
-    e.preventDefault();
-    const paths = pathsFromDataTransfer(e.dataTransfer);
-    if (paths.length) void api.openOverlay(paths, e.altKey ? 'tools' : 'convert');
-  };
+  // A drop anywhere on this page opens the wheel; Alt (Option) held = the Tools ring.
+  useNativeDrop((e, paths) => {
+    if (e.phase === 'drop' && paths.length) void api.openOverlay(paths, e.alt ? 'tools' : 'convert');
+  });
 
   return (
-    <div
-      className="home"
-      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
-      onDrop={onDrop}
-    >
+    <div className="home">
       <h1 className="home__title">Drop a file. Pick a slice.</h1>
       <p className="home__sub">
-        Convert and edit images, video, audio, PDFs, ebooks and subtitles — offline, on this computer. Nothing is uploaded.
+        Convert and edit images, video, audio, PDFs and subtitles — offline, on this computer. Nothing is uploaded.
       </p>
       {caps && !caps.ffmpeg && (
         <div className="banner" role="alert">

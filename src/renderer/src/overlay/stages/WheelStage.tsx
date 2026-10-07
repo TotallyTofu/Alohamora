@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { categoryOf } from '@shared/formats';
+import { categoryOf, fmtFromPath } from '@shared/formats';
 import type { FileInfo } from '@shared/types';
 import { buildWheel, type WheelItem, type WheelModel } from '@shared/wheelItems';
 import { Wheel } from '../../components/Wheel/Wheel';
 import { api } from '../../lib/api';
-import { fmtsFromDragTypes, pathsFromDataTransfer } from '../../lib/dnd';
 import { playClick, playTurn } from '../../lib/sound';
 import { useOverlay } from '../store';
 
@@ -23,7 +22,7 @@ export function WheelStage() {
   const model = useMemo<WheelModel>(() => {
     if (!caps) return EMPTY;
     if (dragging && files.length === 0) {
-      // Global drag on Windows/Linux: only MIME types are readable before the drop.
+      // Global drag: the formats come from the dragged paths until the real files are inspected.
       if (dragFmts.length === 0 || dragFmts.some((f) => f === null)) return { ...EMPTY, emptyReason: 'Drop to choose' };
       const pseudo: FileInfo[] = dragFmts.map((fmt) => ({
         path: '', name: '', base: '', ext: '', fmt, category: fmt ? categoryOf(fmt) : null, size: 0
@@ -59,8 +58,7 @@ export function WheelStage() {
     if (item && !dragging) await run(files, item, withOptions);
   };
 
-  const onDropFiles = async (dt: DataTransfer, hit: number | 'center' | null): Promise<void> => {
-    const paths = pathsFromDataTransfer(dt);
+  const onDropFiles = async (paths: string[], hit: number | 'center' | null): Promise<void> => {
     if (paths.length === 0) return;
     const before = model;
     const real = await api.overlayDropped(paths);
@@ -104,8 +102,8 @@ export function WheelStage() {
     <div className="stage-wheel">
       <Wheel items={model.items} active={active} pickToken={turn} onActiveChange={setActive} onPick={(i, o) => void pick(i, o)}
         hubLabel={hubLabel} thumbnail={first?.thumbnail}
-        onDragTypes={(dt) => setDragFmts(fmtsFromDragTypes(dt))}
-        onDropFiles={(dt, hit) => { void onDropFiles(dt, hit); }} />
+        onDragPaths={(paths) => setDragFmts(paths.map((path) => fmtFromPath(path)))}
+        onDropFiles={(paths, hit) => { void onDropFiles(paths, hit); }} />
       <p className="stage-wheel__caption">{caption}</p>
       <p className="stage-wheel__sub">{subtitle} · <kbd>Tab</kbd> {mode === 'convert' ? 'Tools' : 'Formats'}</p>
     </div>

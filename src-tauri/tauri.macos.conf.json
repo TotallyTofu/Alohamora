@@ -1,0 +1,82 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "externalBin": [
+      "binaries/ffmpeg",
+      "binaries/ffprobe",
+      "binaries/alohamora-drag-helper"
+    ],
+    "macOS": {
+      "frameworks": [
+        "resources/pdfium/libpdfium.dylib"
+      ],
+      "minimumSystemVersion": "11.0",
+      "hardenedRuntime": true,
+      "entitlements": "macos/entitlements.plist",
+      "signingIdentity": "-"
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "jpg",
+          "jpeg",
+          "png",
+          "webp",
+          "heic",
+          "heif",
+          "tif",
+          "tiff",
+          "svg",
+          "avif",
+          "bmp"
+        ],
+        "name": "Image",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": [
+          "mp3",
+          "m4a",
+          "wav",
+          "flac",
+          "ogg",
+          "opus",
+          "aiff",
+          "aif",
+          "wma"
+        ],
+        "name": "Audio",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": [
+          "mp4",
+          "m4v",
+          "mov",
+          "mkv",
+          "webm",
+          "avi",
+          "wmv",
+          "gif"
+        ],
+        "name": "Video",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": [
+          "pdf",
+          "txt",
+          "md",
+          "srt",
+          "vtt"
+        ],
+        "name": "Document",
+        "role": "Viewer",
+        "rank": "Alternate"
+      }
+    ]
+  }
+}

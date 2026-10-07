@@ -26,7 +26,6 @@ function Chip({ fmt, cat, caps }: { fmt: Fmt; cat: Category; caps: Capabilities 
 }
 
 function FormatChips({ cat, caps }: { cat: Category; caps: Capabilities | null }) {
-  if (cat === 'epub') return <span className="fmt-chip">EPUB ↔ PDF</span>;
   if (cat === 'pdf' || cat === 'text') {
     return (
       <>
@@ -80,7 +79,7 @@ export function FormatsView() {
       </section>
 
       <p className="formats__footer">
-        Everything runs on this computer. Engines: FFmpeg {version(caps)}, libvips (sharp), pdf.js, pdf-lib, Tesseract
+        Everything runs on this computer. Engines: FFmpeg {version(caps)}, PDFium, Tesseract, Typst
         {caps?.platform === 'darwin' ? ', sips' : ''}.
       </p>
     </div>

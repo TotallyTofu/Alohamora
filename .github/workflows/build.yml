@@ -2,6 +2,7 @@ name: build
 on:
   push:
     branches: [master]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -10,45 +11,96 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, dist: 'dist:win' }
-          # macOS: `args` ad-hoc signs the app. Without it electron-builder skips signing and leaves an invalid signature
-          # (the downloaded DMG would be reported as "damaged"). Replace with Developer ID secrets for releases (PLAN.md 13.6).
-          - { os: macos-15, dist: 'dist:mac', args: '-- -c.mac.identity=-' }          # Apple Silicon (arm64)
-          - { os: macos-15-intel, dist: 'dist:mac', args: '-- -c.mac.identity=-' }    # Intel (x64); GitHub supports this label until Aug 2027
-          - { os: ubuntu-22.04, dist: 'dist:linux' }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { os: macos-15, target: aarch64-apple-darwin }          # Apple Silicon
+          - { os: macos-15-intel, target: x86_64-apple-darwin }     # Intel (label available until Aug 2027)
+          - { os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+      MANIFEST: src-tauri/Cargo.toml
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Linux libraries
+      - name: Rust (version from rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      # tesseract-rs compiles Leptonica + Tesseract once (several minutes) and keeps them in this folder.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.tesseract-rs
+            ~/Library/Application Support/tesseract-rs
+            ~/AppData/Roaming/tesseract-rs
+          key: tesseract-rs-0.4.0-${{ matrix.os }}
+      - name: Linux packages
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y xvfb libgtk-3-0 libnss3 libxss1 libxtst6 libnotify4 libgbm1 libheif-examples
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential file pkg-config cmake nasm libwebkit2gtk-4.1-dev libxdo-dev libssl-dev \
+            libayatana-appindicator3-dev librsvg2-dev patchelf libheif-examples libheif-plugin-x265 \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav
+      - name: macOS tools
+        if: runner.os == 'macOS'
+        run: brew install nasm
+      - name: Windows tools
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install nasm -y --no-progress
+          "C:\Program Files\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: npm ci
       - run: npm run fetch-binaries        # also builds the macOS drag helper on macOS runners
       - run: npm run check-binaries
+      - run: npm run gen:registry -- --check
       - run: npm run typecheck
       - run: npm test
+      - run: cargo test --manifest-path $MANIFEST --workspace
+        shell: bash
+      - run: cargo clippy --manifest-path $MANIFEST --workspace --all-targets -- -D warnings
+        shell: bash
+      - run: npm run check:offline
+      - run: npm run check:licenses
+      - name: Build the app (debug) for the self-test
+        run: cargo build --manifest-path $MANIFEST
+        shell: bash
+      - name: Self-test (Linux, with networking switched off)
+        if: runner.os == 'Linux'
+        run: unshare -rn ./src-tauri/target/debug/alohamora --selftest --out=.selftest
       - name: Self-test
         if: runner.os != 'Linux'
-        run: npm run selftest
-      - name: Self-test (Linux, headless)
-        if: runner.os == 'Linux'
-        run: xvfb-run -a npm run selftest -- --no-sandbox
+        shell: bash
+        run: ./src-tauri/target/debug/alohamora --selftest --out=.selftest
       - name: Package
-        run: npm run ${{ matrix.dist }} ${{ matrix.args }}
+        shell: bash
+        run: |
+          # Secrets that are not configured arrive as empty strings; Tauri must not see them at all.
+          for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            [ -n "${!v}" ] || unset "$v"
+          done
+          npx tauri build --target ${{ matrix.target }}
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false     # no certificates in CI; macOS passes an explicit ad-hoc identity via matrix.args
+          # Optional. Without these secrets macOS builds are ad-hoc signed and not notarized (PLAN.md Task 9.3).
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: alohamora-${{ matrix.os }}
+          name: alohamora-${{ matrix.target }}
           path: |
-            dist/*.exe
-            dist/*.dmg
-            dist/*.zip
-            dist/*.AppImage
-            dist/*.deb
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
             .selftest/report.json
           if-no-files-found: ignore

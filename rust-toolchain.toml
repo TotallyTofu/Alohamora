@@ -1,0 +1,4 @@
+# The Rust version this code was compiled and tested with (see rewrite/PLAN.md §2). rustup installs it automatically.
+[toolchain]
+channel = "1.97.0"
+components = ["clippy", "rustfmt"]

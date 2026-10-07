@@ -1,0 +1,82 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Alohamora",
+  "mainBinaryName": "alohamora",
+  "version": "0.2.0",
+  "identifier": "com.alohamora.app",
+  "build": {
+    "frontendDist": "../dist/renderer",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev:ui",
+    "beforeBuildCommand": "npm run build:ui"
+  },
+  "app": {
+    "windows": [],
+    "withGlobalTauri": false,
+    "macOSPrivateApi": true,
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: kfile: http://kfile.localhost; media-src 'self' blob: kfile: http://kfile.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; worker-src 'self' blob:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Utility",
+    "shortDescription": "Offline file converter",
+    "longDescription": "Convert and edit images, video, audio, PDFs and subtitles on your own computer. Nothing is uploaded.",
+    "copyright": "Copyright \u00a9 2026 Alohamora contributors",
+    "publisher": "Alohamora contributors",
+    "externalBin": [
+      "binaries/ffmpeg",
+      "binaries/ffprobe"
+    ],
+    "resources": {
+      "resources/tessdata/": "tessdata/",
+      "resources/fonts/": "fonts/",
+      "resources/LICENSE-ffmpeg.txt": "LICENSE-ffmpeg.txt",
+      "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libayatana-appindicator3-1"
+        ],
+        "recommends": [
+          "gstreamer1.0-plugins-good",
+          "gstreamer1.0-libav",
+          "libheif-examples",
+          "libheif-plugin-x265"
+        ],
+        "desktopTemplate": "linux/alohamora.desktop"
+      },
+      "rpm": {
+        "desktopTemplate": "linux/alohamora.desktop"
+      },
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "windows/hooks.nsh"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "hardenedRuntime": true,
+      "entitlements": "macos/entitlements.plist"
+    }
+  }
+}

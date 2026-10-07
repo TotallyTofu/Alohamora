@@ -1,6 +1,6 @@
 import type { ConvertOptions } from './toolOptions';
 
-export type Category = 'image' | 'video' | 'audio' | 'pdf' | 'epub' | 'text' | 'subtitle';
+export type Category = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'subtitle';
 
 export type Fmt =
   | 'jpg' | 'png' | 'webp' | 'heic' | 'tiff' | 'svg' | 'avif' | 'bmp'

@@ -1,25 +1,20 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { api } from '../lib/api';
-import { pathsFromDataTransfer } from '../lib/dnd';
+import { isOver, useNativeDrop } from '../lib/nativeDrop';
 import { Button } from './Button';
 import { Icon } from './Icon';
 
+/** The big drop target on the Convert page. The drop itself is handled by HomeView (anywhere on the page). */
 export function DropZone() {
   const [over, setOver] = useState(false);
-  const depth = useRef(0);
-  const open = (paths: string[], tools: boolean): void => { if (paths.length) void api.openOverlay(paths, tools ? 'tools' : 'convert'); };
+  useNativeDrop((e) => setOver((e.phase === 'enter' || e.phase === 'over') && isOver(e.x, e.y, '.dropzone')));
+  const open = (paths: string[]): void => { if (paths.length) void api.openOverlay(paths, 'convert'); };
   return (
-    <div
-      className={`dropzone${over ? ' is-over' : ''}`}
-      onDragEnter={(e) => { e.preventDefault(); depth.current++; setOver(true); }}
-      onDragLeave={() => { depth.current = Math.max(0, depth.current - 1); if (depth.current === 0) setOver(false); }}
-      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
-      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); depth.current = 0; setOver(false); open(pathsFromDataTransfer(e.dataTransfer), e.altKey); }}
-    >
+    <div className={`dropzone${over ? ' is-over' : ''}`}>
       <Icon name="drop" size={30} />
       <p className="dropzone__title">Drop files here</p>
       <p className="dropzone__sub">
-        or <Button variant="soft" onClick={() => void api.pickFiles().then((p) => open(p, false))}>Browse files…</Button>
+        or <Button variant="soft" onClick={() => void api.pickFiles().then(open)}>Browse files…</Button>
       </p>
     </div>
   );

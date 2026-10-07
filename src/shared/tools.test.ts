@@ -17,8 +17,8 @@ describe('toolsFor', () => {
     expect(ids).not.toContain('video.trim');
   });
 
-  it('epub has no tools', () => {
-    expect(toolsFor('epub', 1)).toEqual([]);
+  it('subtitles have only the shift tool', () => {
+    expect(toolsFor('subtitle', 1).map((t) => t.id)).toEqual(['subtitle.shift']);
   });
 });
 

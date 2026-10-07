@@ -1,10 +1,15 @@
 node_modules/
-out/
 dist/
 .cache/
 .selftest/
-resources/bin/
-resources/tessdata/
-src/renderer/public/pdfjs/
 *.log
 .DS_Store
+# Rust / Tauri build output
+src-tauri/target/
+src-tauri/gen/
+# Fetched by `npm run fetch-binaries` (large, per-OS)
+src-tauri/binaries/
+src-tauri/resources/pdfium/
+src-tauri/resources/tessdata/
+src-tauri/resources/fonts/
+src-tauri/resources/LICENSE-ffmpeg.txt

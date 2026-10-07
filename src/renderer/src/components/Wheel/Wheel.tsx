@@ -1,5 +1,6 @@
 import type { WheelItem } from '@shared/wheelItems';
 import { useRef } from 'react';
+import { useNativeDrop } from '../../lib/nativeDrop';
 import { Icon } from '../Icon';
 import { KeyLock } from './KeyLock';
 import { DEFAULT_GEOMETRY as G, hitTest, labelPoint, sliceOffset, slicePath } from './wheelGeometry';
@@ -15,8 +16,8 @@ export interface WheelProps {
   /** Bump this number each time a choice is made: the key in the centre gives a twist. */
   pickToken?: number;
   demo?: boolean;                                                     // non-interactive (home page)
-  onDropFiles?: (dt: DataTransfer, hit: number | 'center' | null) => void;   // global-drag mode
-  onDragTypes?: (dt: DataTransfer) => void;                           // global-drag mode: read MIME types
+  onDropFiles?: (paths: string[], hit: number | 'center' | null) => void;   // files dropped on the wheel
+  onDragPaths?: (paths: string[]) => void;                                  // files entered the window (before the drop)
 }
 
 export function Wheel(p: WheelProps) {
@@ -33,6 +34,16 @@ export function Wheel(p: WheelProps) {
   };
   const setActive = (h: number | 'center' | null): void => p.onActiveChange?.(typeof h === 'number' ? h : null);
 
+  // Native drag-and-drop (only when the parent wants drops): highlight the slice under the cursor, drop on it.
+  // The OS reports a copy, never a move, so the original file always stays where it is.
+  useNativeDrop((e, paths) => {
+    if (!p.onDropFiles || p.demo) return;
+    if (e.phase === 'enter') p.onDragPaths?.(paths);
+    if (e.phase === 'enter' || e.phase === 'over') setActive(hit(e.x, e.y));
+    if (e.phase === 'leave') p.onActiveChange?.(null);
+    if (e.phase === 'drop' && ref.current?.contains(document.elementFromPoint(e.x, e.y))) p.onDropFiles(paths, hit(e.x, e.y));
+  });
+
   return (
     <div
       ref={ref}
@@ -44,14 +55,6 @@ export function Wheel(p: WheelProps) {
       onPointerLeave={() => { if (!p.demo) p.onActiveChange?.(null); }}
       onClick={(e) => { const h = hit(e.clientX, e.clientY); if (!p.demo && typeof h === 'number') p.onPick?.(h, false); }}
       onContextMenu={(e) => { e.preventDefault(); const h = hit(e.clientX, e.clientY); if (!p.demo && typeof h === 'number') p.onPick?.(h, true); }}
-      onDragEnter={(e) => { if (p.onDragTypes) p.onDragTypes(e.dataTransfer); }}
-      onDragOver={(e) => {
-        if (!p.onDropFiles) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';      // NEVER 'move' — Explorer/Finder/Nautilus could delete the original
-        setActive(hit(e.clientX, e.clientY));
-      }}
-      onDrop={(e) => { if (!p.onDropFiles) return; e.preventDefault(); p.onDropFiles(e.dataTransfer, hit(e.clientX, e.clientY)); }}
     >
       <svg className="wheel__svg" width={G.size} height={G.size} viewBox={`0 0 ${G.size} ${G.size}`} aria-hidden="true">
         <defs>

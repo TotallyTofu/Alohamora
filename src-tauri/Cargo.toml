@@ -1,0 +1,71 @@
+[workspace]
+members = ["crates/core", "crates/engine"]
+resolver = "2"
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.88"
+license = "UNLICENSED"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+regex = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4"] }
+log = "0.4"
+
+[package]
+name = "alohamora"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+default-run = "alohamora"
+
+[lib]
+# Different from the binary name (a lib and bin with the same name collide on Windows).
+name = "alohamora_app"
+
+[build-dependencies]
+tauri-build = { version = "2.5", features = [] }
+
+[dependencies]
+alohamora-core = { path = "crates/core" }
+alohamora-engine = { path = "crates/engine" }
+tauri = { version = "2.12", features = ["macos-private-api", "tray-icon", "image-png"] }
+tauri-plugin-single-instance = "2.5"
+tauri-plugin-dialog = "2.8"
+tauri-plugin-opener = "2.7"
+tauri-plugin-notification = "2.5"
+tauri-plugin-autostart = "2.7"
+tauri-plugin-log = "2.10"
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+percent-encoding = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+x11rb = "0.13"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
+windows = { version = "0.61", features = ["Win32_System_Com", "Win32_UI_Shell"] }
+windows-registry = "0.5"
+windows-result = "0.3"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", features = ["NSEvent", "NSWindow", "NSResponder"] }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+opt-level = 3
+
+# Dependencies are optimised even in debug builds: image codecs (rav1e, mozjpeg) and pdfium/tesseract glue
+# are 10–50× slower unoptimised, which makes the self-test unusable. Our own crates stay fast to compile.
+[profile.dev.package."*"]
+opt-level = 2
+debug = false
