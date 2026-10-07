@@ -142,8 +142,10 @@ Machine: Windows 11 Pro 10.0.26200 x64 (Git Bash), Node 22.19.0, rustup 1.29.1 /
   `drop targets on 'overlay': ... Chrome_WidgetWin_1=none, Chrome_RenderWidgetHostHWND=none` (the main window has a drop target on all
   three WebView2 windows): wry registers its OLE drop target only on the WebView2 windows that exist when the webview is created, and
   the overlay is built with `.focused(false)`, which also skips wry's `controller.MoveFocus` (wry-0.57.0 `webview2/mod.rs:612`), so
-  its render window does not exist yet and never gets a drop target; no `drag-drop enter on 'overlay'` can ever arrive. Proposed fix
-  (not applied, the owner said it is fine for now): build the overlay without `.focused(false)` on Windows, then check the log line again.
+  its render window does not exist yet and never gets a drop target; no `drag-drop enter on 'overlay'` can ever arrive. Fix applied
+  afterwards (`windows/overlay.rs`): `.focused(false)` is now only used on non-Windows. To confirm on Windows: the log line
+  `drop targets on 'overlay'` should list a `drop target` on `Chrome_RenderWidgetHostHWND`, and a Shift-drag should log
+  `native drag-drop enter on 'overlay'` and show the conversion slices. Not yet confirmed by a run.
 - **Repository hygiene problem found before the first push.** The `.gitignore` of Task 1.1 no longer lists `out/`, `resources/bin/`,
   `resources/tessdata/` and `src/renderer/public/pdfjs/` (old Electron build leftovers that the previous `.gitignore` ignored), so the
   `git add -A` of every task commit since Task 1.1 added them: `resources/bin/win32-x64/ffmpeg.exe` and `ffprobe.exe` (about 100.5 MiB

@@ -23,11 +23,10 @@ fn wheel_size() -> OverlaySize {
 }
 
 pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
-    let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()))
+    let b = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("index.html".into()))
         .title("Alohamora")
         .inner_size(WHEEL_STAGE_WIDTH, WHEEL_STAGE_HEIGHT)
         .visible(false)
-        .focused(false)
         .decorations(false)
         .transparent(true)
         .resizable(false)
@@ -37,8 +36,13 @@ pub fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
         .always_on_top(true)
         .shadow(false)
         .visible_on_all_workspaces(true)
-        .additional_browser_args(super::WEBVIEW2_ARGS)
-        .build()?;
+        .additional_browser_args(super::WEBVIEW2_ARGS);
+    // Not on Windows: `.focused(false)` also makes wry skip `controller.MoveFocus`, so WebView2's render window does not
+    // exist yet when wry attaches its OLE drop target, and the wheel never receives the dragged files (no drag-drop
+    // `enter` for it; see rewrite/PROGRESS.md). The window is created hidden, so nothing takes focus there anyway.
+    #[cfg(not(windows))]
+    let b = b.focused(false);
+    let win = b.build()?;
     platform::configure_overlay(&win);
     Ok(win)
 }
