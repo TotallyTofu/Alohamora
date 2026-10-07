@@ -9757,7 +9757,7 @@ Only needed for public distribution. Without it, the app still works; users just
 | Windows | an OV/EV code-signing certificate or Azure Trusted Signing | `CSC_LINK`/`CSC_KEY_PASSWORD`, or electron-builder's `azureSignOptions`. Removes the SmartScreen warning once reputation builds. |
 | Linux | nothing | AppImage/.deb are not signed by convention. |
 
-In CI, store the secrets as GitHub Actions secrets and remove `CSC_IDENTITY_AUTO_DISCOVERY: false` for release builds. Note that the macOS CI jobs currently use `CSC_IDENTITY_AUTO_DISCOVERY: false`, which produces macOS artifacts with an invalid signature; for downloadable CI builds pass `-c.mac.identity=-` (ad-hoc) or real signing secrets instead.
+In CI, store the secrets as GitHub Actions secrets and remove `CSC_IDENTITY_AUTO_DISCOVERY: false` for release builds. The macOS CI jobs set `CSC_IDENTITY_AUTO_DISCOVERY: false` for all platforms but pass `-c.mac.identity=-` (via `matrix.args` in `build.yml`) so their DMG/ZIP get a valid ad-hoc signature; without that flag the app would have an invalid signature. For release builds replace the flag with real signing secrets.
 
 ---
 
