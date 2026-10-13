@@ -80,7 +80,9 @@ A packaged app can test itself and writes a JSON report:
 The self-test reuses any fixture files it already finds in its output folder. If results look wrong after an upgrade, run it
 again with a fresh folder: `--selftest --out=<empty folder>`.
 
-`.github/workflows/build.yml` builds, tests and self-tests all platforms (on Linux with networking switched off).
+`.github/workflows/build.yml` builds, tests and self-tests all platforms (on Linux with networking switched off). Pushing a
+tag such as `v0.3.0` also collects the installers into a draft GitHub Release with the notes in `.github/release-notes.md`; a
+tag with a hyphen (`v0.3.0-beta.1`) is marked as a pre-release.
 
 ## Platform notes
 
