@@ -13,8 +13,13 @@ opens a network connection.
 The rewrite from Electron is described in `rewrite/OUTLINE.md` (design) and `rewrite/PLAN.md` (step-by-step build plan);
 progress is logged in `rewrite/PROGRESS.md`.
 
-Alohamora's own code is released under the [MIT License](LICENSE). The bundled third-party programs keep their own licences
-(FFmpeg is GPL): see [Licences](#licences).
+## Supported formats and tools
+
+<img width="950" height="973" alt="image" src="https://github.com/user-attachments/assets/0c6c86e4-34ca-4b43-9e94-9dd446e425c0" />
+
+Optional Settings for Image quality, resolution, and Audio bitrate quality can be changed in the Settings tab:
+
+<img width="764" height="1439" alt="image" src="https://github.com/user-attachments/assets/61a22411-07db-4a0e-972b-03b5d1154ec6" />
 
 ## Running it from source
 
