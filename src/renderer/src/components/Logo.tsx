@@ -7,7 +7,7 @@ const polar = (r: number, deg: number): string => {
 const petal = (from: number, to: number, outer: number, inner: number): string =>
   `M${polar(outer, from)} A${outer} ${outer} 0 0 1 ${polar(outer, to)} L${polar(inner, to)} A${inner} ${inner} 0 0 0 ${polar(inner, from)} Z`;
 
-/** The Alohamora mark: a small wheel with one orange petal and a keyhole in its hub. Same drawing as the app icon. */
+/** The Alohamora mark: a small wheel with one accent-coloured petal and a keyhole in its hub. Same drawing as the app icon. */
 export function Logo({ size = 22 }: { size?: number }) {
   return (
     <svg className="logo" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
