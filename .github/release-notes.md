@@ -33,5 +33,5 @@ did and what happened.
 
 Alohamora's own code is MIT-licensed. The app bundles FFmpeg, which is licensed under the GPL; its licence text is installed
 with the app (`LICENSE-ffmpeg.txt`). FFmpeg source code: https://ffmpeg.org/download.html. The bundled builds come from
-https://www.gyan.dev/ffmpeg/builds/ (Windows) and https://ffmpeg.martin-riedl.de/ (macOS and Linux). Every other component and
-its licence is listed in `THIRD_PARTY_NOTICES.md`.
+https://www.gyan.dev/ffmpeg/builds/ (Windows), https://www.osxexperts.net/ (macOS) and https://ffmpeg.martin-riedl.de/ (Linux).
+Every other component and its licence is listed in `THIRD_PARTY_NOTICES.md`.

@@ -162,6 +162,10 @@ Machine: Windows 11 Pro 10.0.26200 x64 (Git Bash), Node 22.19.0, rustup 1.29.1 /
   release, GitHub asset digests), tessdata_fast and the Noto fonts at fixed commits (all identical to the files fetched on 2026-10-07).
   **Not pinned yet: FFmpeg for macOS and Linux.** ffmpeg.martin-riedl.de answered HTTP 521 all day, so its build folders and
   `.sha256` files could not be read; those targets stop with "not pinned yet" until a build is pinned (or use `--ffmpeg-dir`).
+  Later the same day, at the owner's choice, macOS switched **temporarily** to osxexperts.net (FFmpeg 9.0 Apple Silicon, 8.0 Intel;
+  libx264, libvpx, libopus, libmp3lame and libvorbis all enabled; pinned to the files downloaded that day, as the site publishes no
+  checksums). Shaka's static-ffmpeg-binaries were ruled out: no libvorbis. To do when Riedl is back: pin its 9.0.2 build for macOS
+  (the one CI passed with on 2026-10-13) and Linux, and put THIRD_PARTY_NOTICES.md and .github/release-notes.md back.
   Same review: `cargo update -p rustls -p rustls-webpki -p webpki-root-certs` fixes 6 RustSec advisories (all build-time only,
   through tesseract-rs's build script). Still open: zip 8.6.0 (3 advisories, fixed in 9.0; they concern `extract()`, which nothing
   here calls) and quick-xml 0.38.4 (2, held back by typst's citationberg 0.7; only CSL/bibliography parsing, which the fixed text →

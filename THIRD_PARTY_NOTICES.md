@@ -7,7 +7,7 @@ Rust crate compiled into the app, with its licence, is listed in `THIRD_PARTY_CR
 | Component | Licence | Note |
 |---|---|---|
 | Tauri, wry, tao | MIT / Apache-2.0 | Application runtime (uses the system web view: WebView2, WKWebView or WebKitGTK) |
-| FFmpeg (gyan.dev "essentials" build on Windows; Martin Riedl builds on macOS and Linux) | **GPL** (includes x264 / x265) | Separate programs (`ffmpeg`, `ffprobe`); see `LICENSE-ffmpeg.txt`. Source: https://ffmpeg.org and the build providers. |
+| FFmpeg (gyan.dev "essentials" build on Windows; osxexperts.net builds on macOS; Martin Riedl builds on Linux) | **GPL** (includes x264 / x265) | Separate programs (`ffmpeg`, `ffprobe`); see `LICENSE-ffmpeg.txt`. Source: https://ffmpeg.org and the build providers. |
 | PDFium (bblanchon/pdfium-binaries) | BSD-3-Clause / Apache-2.0 and bundled third-party licences | PDF rendering, text and page editing; see `pdfium/LICENSE-pdfium.txt` |
 | Tesseract OCR, Leptonica | Apache-2.0, BSD-2-Clause | OCR, compiled into the app |
 | tessdata_fast (English, Vietnamese) | Apache-2.0 | OCR language data |

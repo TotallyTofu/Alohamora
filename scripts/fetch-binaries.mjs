@@ -35,8 +35,10 @@ const tmp = path.join(root, '.cache', 'downloads', target);
 
 // Windows: gyan.dev "essentials" build. gyan.dev deletes old versions, so the pin points at its GitHub mirror (same files, kept).
 // macOS and Linux: Martin Riedl's builds. Each build has its own folder, <unix time>_<version>, and a .sha256 next to every zip.
-// They are NOT pinned yet (sha256: null, so the script stops): ffmpeg.martin-riedl.de was down (HTTP 521) on 2026-10-21 when the
-// other checksums were added. Until a build is pinned, use --ffmpeg-dir on those targets.
+// ffmpeg.martin-riedl.de was down (HTTP 521) on 2026-10-21, so none is pinned yet: Linux stops here (sha256: null; use
+// --ffmpeg-dir) and macOS uses osxexperts.net FOR NOW (FFmpeg 9.0 Apple Silicon, 8.0 Intel; listed on ffmpeg.org). osxexperts
+// publishes no checksums (these are the files downloaded on 2026-10-21) and reuses its file names, so a mismatch means a new
+// upload. When Riedl is back, pin its 9.0.2 build (the one CI used on 2026-10-13) for macOS and Linux.
 const RIEDL = (os, a, build, file) => `https://ffmpeg.martin-riedl.de/download/${os}/${a}/${build}/${file}`;
 const riedl = (os, a, build, ffmpegSha, ffprobeSha) => [
   { url: RIEDL(os, a, build, 'ffmpeg.zip'), sha256: ffmpegSha, zip: 'ffmpeg.zip', files: ['ffmpeg'] },
@@ -44,8 +46,14 @@ const riedl = (os, a, build, ffmpegSha, ffprobeSha) => [
 ];
 const FFMPEG = {
   'win32-x64': [{ url: 'https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip', sha256: '60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba', zip: 'ffmpeg-win.zip', files: ['ffmpeg.exe', 'ffprobe.exe'] }],
-  'darwin-arm64': riedl('macos', 'arm64', null, null, null),
-  'darwin-x64': riedl('macos', 'amd64', null, null, null),
+  'darwin-arm64': [
+    { url: 'https://www.osxexperts.net/ffmpeg9arm.zip', sha256: 'd0c06c5c68ce48af3143b262f7a9118a7c9f67de1e237fcc24ffb14df9c67af9', zip: 'ffmpeg.zip', files: ['ffmpeg'] },
+    { url: 'https://www.osxexperts.net/ffprobe9arm.zip', sha256: '0c94fbdd8917022f28115eca512196cf4648732bc9e5db9ec8896c7e519d02aa', zip: 'ffprobe.zip', files: ['ffprobe'] }
+  ],
+  'darwin-x64': [
+    { url: 'https://www.osxexperts.net/ffmpeg80intel.zip', sha256: '2d24d22db78c87f394a5822867acd5c5dc5e762cd261a44bd26923f3a5af3e07', zip: 'ffmpeg.zip', files: ['ffmpeg'] },
+    { url: 'https://www.osxexperts.net/ffprobe80intel.zip', sha256: '0b6576104a95c1b39d4939e2df86f8f7cf1d55287ff57da48777d94605d12feb', zip: 'ffprobe.zip', files: ['ffprobe'] }
+  ],
   'linux-x64': riedl('linux', 'amd64', null, null, null),
   'linux-arm64': riedl('linux', 'arm64', null, null, null)
 }[target];
