@@ -155,3 +155,15 @@ Machine: Windows 11 Pro 10.0.26200 x64 (Git Bash), Node 22.19.0, rustup 1.29.1 /
   the owner's approval) or the work is squashed into one new commit. Local backup branch: `backup/before-cleanup`.
 - **Self-test output folders.** The plan's `.gitignore` covers `.selftest/` only; `.selftest-app/`, `.selftest-release/` etc. are
   ignored through the local-only `.git/info/exclude`, so no tracked file changed.
+- **Pinned downloads (2026-10-21, after a security review).** OUTLINE §12.2 asked for SHA-256 pins on every download; the plan's
+  `fetch-binaries.mjs` had none and fetched "latest" builds. Every download now has an exact URL and a SHA-256, checked before use
+  (cached files too; a mismatch stops the script): FFmpeg 9.0.2 for Windows from gyan.dev's GitHub mirror `GyanD/codexffmpeg`
+  (gyan.dev itself deletes old versions; the hash equals gyan.dev's published `.sha256`), PDFium `chromium/8086` (immutable
+  release, GitHub asset digests), tessdata_fast and the Noto fonts at fixed commits (all identical to the files fetched on 2026-10-07).
+  **Not pinned yet: FFmpeg for macOS and Linux.** ffmpeg.martin-riedl.de answered HTTP 521 all day, so its build folders and
+  `.sha256` files could not be read; those targets stop with "not pinned yet" until a build is pinned (or use `--ffmpeg-dir`).
+  Same review: `cargo update -p rustls -p rustls-webpki -p webpki-root-certs` fixes 6 RustSec advisories (all build-time only,
+  through tesseract-rs's build script). Still open: zip 8.6.0 (3 advisories, fixed in 9.0; they concern `extract()`, which nothing
+  here calls) and quick-xml 0.38.4 (2, held back by typst's citationberg 0.7; only CSL/bibliography parsing, which the fixed text →
+  PDF template never uses). Also unverified: tesseract-rs 0.4.0's build script downloads the Leptonica 1.87.0 and Tesseract 5.5.2
+  source zips from GitHub tags without a checksum (CI caches the result in `~/.tesseract-rs`).

@@ -3,8 +3,11 @@
 //   src-tauri/resources/pdfium/                          (PDFium shared library, bblanchon/pdfium-binaries)
 //   src-tauri/resources/tessdata/                        (OCR languages: eng, vie)
 //   src-tauri/resources/fonts/                           (Noto Sans / Serif / Sans Mono for text → PDF)
-// Options: --target=<platform-arch> (e.g. darwin-x64), --ffmpeg-dir=<folder with ffmpeg + ffprobe> (offline/mirror).
+// Options: --target=<platform-arch> (e.g. darwin-x64), --ffmpeg-dir=<folder with ffmpeg + ffprobe> (offline/mirror; not checked).
+// Every download is pinned to one exact file and its SHA-256: these files ship inside the installers, so a file that changed
+// on a download site must stop the build. To update one, change its URL and its hash together.
 import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -30,46 +33,74 @@ const binDir = path.join(tauriDir, 'binaries');
 const resDir = path.join(tauriDir, 'resources');
 const tmp = path.join(root, '.cache', 'downloads', target);
 
-const RIEDL = (os, a, file) => `https://ffmpeg.martin-riedl.de/redirect/latest/${os}/${a}/release/${file}`;
+// Windows: gyan.dev "essentials" build. gyan.dev deletes old versions, so the pin points at its GitHub mirror (same files, kept).
+// macOS and Linux: Martin Riedl's builds. Each build has its own folder, <unix time>_<version>, and a .sha256 next to every zip.
+// They are NOT pinned yet (sha256: null, so the script stops): ffmpeg.martin-riedl.de was down (HTTP 521) on 2026-10-21 when the
+// other checksums were added. Until a build is pinned, use --ffmpeg-dir on those targets.
+const RIEDL = (os, a, build, file) => `https://ffmpeg.martin-riedl.de/download/${os}/${a}/${build}/${file}`;
+const riedl = (os, a, build, ffmpegSha, ffprobeSha) => [
+  { url: RIEDL(os, a, build, 'ffmpeg.zip'), sha256: ffmpegSha, zip: 'ffmpeg.zip', files: ['ffmpeg'] },
+  { url: RIEDL(os, a, build, 'ffprobe.zip'), sha256: ffprobeSha, zip: 'ffprobe.zip', files: ['ffprobe'] }
+];
 const FFMPEG = {
-  'win32-x64': [{ url: 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip', zip: 'ffmpeg-win.zip', files: ['ffmpeg.exe', 'ffprobe.exe'] }],
-  'darwin-arm64': [{ url: RIEDL('macos', 'arm64', 'ffmpeg.zip'), zip: 'ffmpeg.zip', files: ['ffmpeg'] }, { url: RIEDL('macos', 'arm64', 'ffprobe.zip'), zip: 'ffprobe.zip', files: ['ffprobe'] }],
-  'darwin-x64': [{ url: RIEDL('macos', 'amd64', 'ffmpeg.zip'), zip: 'ffmpeg.zip', files: ['ffmpeg'] }, { url: RIEDL('macos', 'amd64', 'ffprobe.zip'), zip: 'ffprobe.zip', files: ['ffprobe'] }],
-  'linux-x64': [{ url: RIEDL('linux', 'amd64', 'ffmpeg.zip'), zip: 'ffmpeg.zip', files: ['ffmpeg'] }, { url: RIEDL('linux', 'amd64', 'ffprobe.zip'), zip: 'ffprobe.zip', files: ['ffprobe'] }],
-  'linux-arm64': [{ url: RIEDL('linux', 'arm64', 'ffmpeg.zip'), zip: 'ffmpeg.zip', files: ['ffmpeg'] }, { url: RIEDL('linux', 'arm64', 'ffprobe.zip'), zip: 'ffprobe.zip', files: ['ffprobe'] }]
+  'win32-x64': [{ url: 'https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip', sha256: '60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba', zip: 'ffmpeg-win.zip', files: ['ffmpeg.exe', 'ffprobe.exe'] }],
+  'darwin-arm64': riedl('macos', 'arm64', null, null, null),
+  'darwin-x64': riedl('macos', 'amd64', null, null, null),
+  'linux-x64': riedl('linux', 'amd64', null, null, null),
+  'linux-arm64': riedl('linux', 'arm64', null, null, null)
 }[target];
 
-// PDFium build tested with pdfium-render 0.9.4. Change both together.
+// PDFium build tested with pdfium-render 0.9.4. Change both together. (The release is immutable; hashes = GitHub's asset digests.)
 const PDFIUM_TAG = 'chromium%2F8086';
 const PDFIUM = {
-  'win32-x64': { asset: 'pdfium-win-x64.tgz', lib: 'bin/pdfium.dll' },
-  'darwin-arm64': { asset: 'pdfium-mac-arm64.tgz', lib: 'lib/libpdfium.dylib' },
-  'darwin-x64': { asset: 'pdfium-mac-x64.tgz', lib: 'lib/libpdfium.dylib' },
-  'linux-x64': { asset: 'pdfium-linux-x64.tgz', lib: 'lib/libpdfium.so' },
-  'linux-arm64': { asset: 'pdfium-linux-arm64.tgz', lib: 'lib/libpdfium.so' }
+  'win32-x64': { asset: 'pdfium-win-x64.tgz', lib: 'bin/pdfium.dll', sha256: '1fd8af952832dbb0eb16d9249f68fe09e5f5ebf7c3dd9f6066ea2720cc28487d' },
+  'darwin-arm64': { asset: 'pdfium-mac-arm64.tgz', lib: 'lib/libpdfium.dylib', sha256: 'e98679e052c07edbb5a627980902abb823d4b3f35744d877bd21668bd9fc13ab' },
+  'darwin-x64': { asset: 'pdfium-mac-x64.tgz', lib: 'lib/libpdfium.dylib', sha256: '933a85a138f6027243c56bff8676375c33ceeb767401389415ffc44d689ca85d' },
+  'linux-x64': { asset: 'pdfium-linux-x64.tgz', lib: 'lib/libpdfium.so', sha256: '588577cf52dabc1a444988bac841920df54cc2f141801424de97ab04f4fbb935' },
+  'linux-arm64': { asset: 'pdfium-linux-arm64.tgz', lib: 'lib/libpdfium.so', sha256: 'e7e2fe4686925618330103cb167950aca5a84bb00fd977a41b86be59dd1480a2' }
 }[target];
 
+// tessdata_fast at a fixed commit (eng and vie last changed in 2017).
+const TESSDATA = 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd';
 const TESS = {
-  eng: 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/eng.traineddata',
-  vie: 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/vie.traineddata'
+  eng: '7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2',
+  vie: '79df64caf7bcfb2a27df5042ecb6121e196eada34da774956995747636d5bfa1'
 };
 
-const NOTO = 'https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts';
-const FONTS = [
-  'NotoSans/hinted/ttf/NotoSans-Regular.ttf', 'NotoSans/hinted/ttf/NotoSans-Bold.ttf',
-  'NotoSans/hinted/ttf/NotoSans-Italic.ttf', 'NotoSans/hinted/ttf/NotoSans-BoldItalic.ttf',
-  'NotoSerif/hinted/ttf/NotoSerif-Regular.ttf', 'NotoSerif/hinted/ttf/NotoSerif-Bold.ttf',
-  'NotoSerif/hinted/ttf/NotoSerif-Italic.ttf', 'NotoSerif/hinted/ttf/NotoSerif-BoldItalic.ttf',
-  'NotoSansMono/hinted/ttf/NotoSansMono-Regular.ttf', 'NotoSansMono/hinted/ttf/NotoSansMono-Bold.ttf'
-];
+const NOTO = 'https://raw.githubusercontent.com/notofonts/notofonts.github.io/93fac8abebe6c7fed0c5b7d2456d8fa484fa146c/fonts';
+const FONTS = {
+  'NotoSans/hinted/ttf/NotoSans-Regular.ttf': '478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823',
+  'NotoSans/hinted/ttf/NotoSans-Bold.ttf': '1df075a380fc7cb898acf64c1f7b3b4dd780de3caa860178bf929de35817a913',
+  'NotoSans/hinted/ttf/NotoSans-Italic.ttf': '467e3f89eeca4108bb8710a2b9e0cf2281ac56d5b0609211a83776d0505eecb5',
+  'NotoSans/hinted/ttf/NotoSans-BoldItalic.ttf': '1b602a9d6353be42c91df097a4857b69fa2696f26703d7a33b54a15d87c2622c',
+  'NotoSerif/hinted/ttf/NotoSerif-Regular.ttf': '19e72cd8d595fae5bd74a5206f5d938512e1183d4fed7abb1ec1be1d7efa5f88',
+  'NotoSerif/hinted/ttf/NotoSerif-Bold.ttf': '96656aa5cec8f1d6fd0e804c1fad397e1a1cfa082e6642124e0bda68cd8363ce',
+  'NotoSerif/hinted/ttf/NotoSerif-Italic.ttf': '749e80e313ef711f9373c6cce17c72297ef05490b3dcda7967d1d5d90bf1183f',
+  'NotoSerif/hinted/ttf/NotoSerif-BoldItalic.ttf': 'c710c5b9cf354ae46e7a10472a08019b28220fafeb5887a482a76856f8f6fc0b',
+  'NotoSansMono/hinted/ttf/NotoSansMono-Regular.ttf': '65b5e2b2c4a1fba9ae8be1f026cb35b03dcb8886d9b2a4147054fde12f7e767d',
+  'NotoSansMono/hinted/ttf/NotoSansMono-Bold.ttf': 'a21ea0ba6ea49fda7b34ca39a504b487f1130885d36e1a4f9f4255b3ba6994bc'
+};
 
-async function download(url, dest) {
-  if (fs.existsSync(dest)) { console.log('cached  ', path.basename(dest)); return; }
+async function sha256(file) {
+  const hash = crypto.createHash('sha256');
+  for await (const chunk of fs.createReadStream(file)) hash.update(chunk);
+  return hash.digest('hex');
+}
+
+/** Downloads url to dest unless dest already is the pinned file. A different SHA-256 stops the build. */
+async function download(url, dest, sha) {
+  if (!sha) throw new Error(`No SHA-256 pinned for ${url}: pin it in scripts/fetch-binaries.mjs`);
+  if (fs.existsSync(dest) && (await sha256(dest)) === sha) { console.log('cached  ', path.basename(dest)); return; }
   console.log('download', url);
   const res = await fetch(url, { redirect: 'follow' });
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status} for ${url}`);
   await fs.promises.mkdir(path.dirname(dest), { recursive: true });
   await pipeline(Readable.fromWeb(res.body), fs.createWriteStream(dest + '.part'));
+  const got = await sha256(dest + '.part');
+  if (got !== sha) {
+    fs.rmSync(dest + '.part');
+    throw new Error(`SHA-256 mismatch for ${url}\n  expected ${sha}\n  got      ${got}`);
+  }
   await fs.promises.rename(dest + '.part', dest);
 }
 
@@ -108,9 +139,10 @@ async function fetchFfmpeg() {
     if (lic) fs.copyFileSync(lic, path.join(resDir, 'LICENSE-ffmpeg.txt'));
     return;
   }
+  if (FFMPEG.some((s) => !s.sha256)) throw new Error(`FFmpeg for ${target} is not pinned yet (see FFMPEG in scripts/fetch-binaries.mjs): use --ffmpeg-dir=<folder with ffmpeg + ffprobe>`);
   for (const s of FFMPEG) {
     const zip = path.join(tmp, s.zip);
-    await download(s.url, zip);
+    await download(s.url, zip, s.sha256);
     const out = path.join(tmp, `${s.zip}-extract`);
     fs.rmSync(out, { recursive: true, force: true });
     await extract(zip, { dir: out });
@@ -131,7 +163,7 @@ async function fetchPdfium() {
   const libName = path.basename(PDFIUM.lib);
   if (fs.existsSync(path.join(dir, libName))) { console.log('pdfium already present'); return; }
   const tgz = path.join(tmp, PDFIUM.asset);
-  await download(`https://github.com/bblanchon/pdfium-binaries/releases/download/${PDFIUM_TAG}/${PDFIUM.asset}`, tgz);
+  await download(`https://github.com/bblanchon/pdfium-binaries/releases/download/${PDFIUM_TAG}/${PDFIUM.asset}`, tgz, PDFIUM.sha256);
   const out = path.join(tmp, 'pdfium-extract');
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
@@ -148,8 +180,8 @@ async function main() {
   const ffLicense = path.join(resDir, 'LICENSE-ffmpeg.txt');
   if (!fs.existsSync(ffLicense)) fs.writeFileSync(ffLicense, 'FFmpeg is free software licensed under the GNU General Public License (GPL).\nLicence and source code: https://ffmpeg.org/legal.html\n');
   await fetchPdfium();
-  for (const [lang, url] of Object.entries(TESS)) await download(url, path.join(resDir, 'tessdata', `${lang}.traineddata`));
-  for (const f of FONTS) await download(`${NOTO}/${f}`, path.join(resDir, 'fonts', path.basename(f)));
+  for (const [lang, sha] of Object.entries(TESS)) await download(`${TESSDATA}/${lang}.traineddata`, path.join(resDir, 'tessdata', `${lang}.traineddata`), sha);
+  for (const [f, sha] of Object.entries(FONTS)) await download(`${NOTO}/${f}`, path.join(resDir, 'fonts', path.basename(f)), sha);
   console.log('Done. Sidecars in', binDir, '· resources in', resDir);
 }
 
