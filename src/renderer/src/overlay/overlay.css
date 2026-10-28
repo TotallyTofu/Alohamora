@@ -1,5 +1,7 @@
 .overlay { position: fixed; inset: 0; }
-.overlay__center { position: absolute; inset: 24px; display: grid; place-items: center; }
+/* minmax(0, 1fr): the column is the window's width, never its content's. An auto column grew to fit a long file name
+   (the title does not wrap), so the Done card got wider than the window and its buttons were cut off. */
+.overlay__center { position: absolute; inset: 24px; display: grid; place-items: center; grid-template-columns: minmax(0, 1fr); }
 .stage-wheel { position: absolute; left: 50px; top: 40px; width: 340px; display: flex; flex-direction: column; align-items: center; }
 .stage-wheel__caption { margin-top: 18px; padding: 6px 14px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-2);
   font-size: 14px; font-weight: 600; max-width: 340px; text-align: center; }
@@ -7,8 +9,9 @@
   padding: 3px 10px; border-radius: 999px; max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card { width: 100%; background: var(--surface); border-radius: var(--radius-xl); box-shadow: var(--shadow-3); padding: 24px;
   display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; animation: panel-in 200ms var(--ease-out) both; }
-.status__title { font-size: 17px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.status__sub { font-size: 13px; color: var(--text-2); }
+.status__title { font-size: 17px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  overflow-wrap: anywhere; }
+.status__sub { font-size: 13px; color: var(--text-2); max-width: 100%; overflow-wrap: anywhere; }
 .status__actions { display: flex; gap: 8px; margin-top: 4px; }
 .status__icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; }
 .status__icon--ok { background: color-mix(in srgb, var(--success) 14%, transparent); color: var(--success); }
