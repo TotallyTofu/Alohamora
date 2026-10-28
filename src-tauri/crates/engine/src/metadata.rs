@@ -55,11 +55,12 @@ pub fn read_media(p: &Path) -> Result<MetadataInfo> {
 
 /// EXIF "2024:05:01 14:30:00" → "2024-05-01T14:30" (the format of <input type="datetime-local">).
 fn local_input(v: &str) -> String {
-    let b = v.as_bytes();
-    if v.len() >= 16 && b[4] == b':' && b[7] == b':' {
-        format!("{}-{}-{}T{}", &v[0..4], &v[5..7], &v[8..10], &v[11..16])
-    } else {
-        String::new()
+    // Only plain ASCII can be sliced by byte position (the text comes from the file and may hold any letter).
+    match v.get(..16) {
+        Some(h) if h.is_ascii() && h.as_bytes()[4] == b':' && h.as_bytes()[7] == b':' => {
+            format!("{}-{}-{}T{}", &h[0..4], &h[5..7], &h[8..10], &h[11..16])
+        }
+        _ => String::new(),
     }
 }
 
@@ -117,11 +118,12 @@ pub fn read_image(p: &Path) -> Result<MetadataInfo> {
 
 /// "D:20240501143000+02'00'" → "2024-05-01 14:30:00" (shown as text; the UI does not parse it).
 fn pdf_date(v: &str) -> String {
-    let d = v.trim_start_matches("D:");
-    if d.len() >= 14 && d[..14].chars().all(|c| c.is_ascii_digit()) {
-        format!("{}-{}-{} {}:{}:{}", &d[0..4], &d[4..6], &d[6..8], &d[8..10], &d[10..12], &d[12..14])
-    } else {
-        v.to_string()
+    // `get` instead of `[..14]`: byte 14 may fall inside a non-ASCII letter of a malformed date.
+    match v.trim_start_matches("D:").get(..14) {
+        Some(d) if d.bytes().all(|c| c.is_ascii_digit()) => {
+            format!("{}-{}-{} {}:{}:{}", &d[0..4], &d[4..6], &d[6..8], &d[8..10], &d[10..12], &d[12..14])
+        }
+        _ => v.to_string(),
     }
 }
 
@@ -164,6 +166,10 @@ mod tests {
         assert_eq!(local_input("2024-05-01 14:30:00"), "", "not the EXIF layout");
         assert_eq!(local_input("2024:05:01"), "");
         assert_eq!(local_input(""), "");
+        // Regression: EXIF text comes from the file, and slicing at a byte inside a non-ASCII letter used to panic.
+        assert_eq!(local_input("2024:05:01 14:3é:00"), "");
+        assert_eq!(local_input("2024:0é:01 14:30:00"), "");
+        assert_eq!(local_input("2024:05:01 14:30é"), "2024-05-01T14:30");
     }
 
     #[test]
@@ -172,6 +178,10 @@ mod tests {
         assert_eq!(pdf_date("20240501143000Z"), "2024-05-01 14:30:00");
         assert_eq!(pdf_date("D:2024"), "D:2024", "too short: shown as stored");
         assert_eq!(pdf_date("yesterday"), "yesterday");
+        // Regression: any PDF can carry a date like this, and slicing inside the "é" used to panic.
+        assert_eq!(pdf_date("D:2024050114300é"), "D:2024050114300é");
+        assert_eq!(pdf_date("D:20240501143000é"), "2024-05-01 14:30:00");
+        assert_eq!(pdf_date("Ngày 1 tháng 5"), "Ngày 1 tháng 5");
     }
 
     #[test]

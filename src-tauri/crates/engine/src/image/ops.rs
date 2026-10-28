@@ -16,6 +16,10 @@ use crate::Result;
 /// "#rgb", "#rrggbb" or "#rrggbbaa". Anything else is white.
 pub fn parse_color(s: &str) -> [u8; 4] {
     let h = s.trim().trim_start_matches('#');
+    // Hex digits only: makes the byte slicing below safe and stops from_str_radix accepting a "+" sign.
+    if !h.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return [255, 255, 255, 255];
+    }
     let hex = |i: usize, n: usize| u8::from_str_radix(&h[i..i + n], 16).ok();
     let v = match h.len() {
         3 => (|| Some([hex(0, 1)? * 17, hex(1, 1)? * 17, hex(2, 1)? * 17, 255]))(),
@@ -292,7 +296,8 @@ mod tests {
         assert_eq!(parse_color("#FF5A1F"), [255, 90, 31, 255]);
         assert_eq!(parse_color(" #123 "), [17, 34, 51, 255]);
         assert_eq!(parse_color("#00000080"), [0, 0, 0, 128]);
-        for bad in ["red", "#12", "#ggg", "", "#12345"] {
+        // "#é0" and "#éé00" used to panic (byte slicing inside "é"); "+f" was read as 15 by from_str_radix.
+        for bad in ["red", "#12", "#ggg", "", "#12345", "#é0", "#éé00", "#+f+f+f"] {
             assert_eq!(parse_color(bad), [255, 255, 255, 255], "{bad:?} falls back to white");
         }
     }
