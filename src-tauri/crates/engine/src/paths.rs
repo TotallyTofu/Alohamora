@@ -154,3 +154,24 @@ fn is_executable(p: &Path) -> bool {
 pub fn p2s(p: &Path) -> String {
     p.to_string_lossy().to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Regression (rewrite/PROGRESS.md, Task 8.8): Tauri hands out `\\?\C:\...` folders on Windows and Tesseract could not
+    // open `eng.traineddata` below one, so OCR failed in the installed app while the engine example (plain path) passed.
+    #[test]
+    fn verbatim_prefix_is_stripped_but_unc_paths_are_kept() {
+        assert_eq!(strip_verbatim(PathBuf::from(r"\\?\C:\app\resources")), PathBuf::from(r"C:\app\resources"));
+        assert_eq!(strip_verbatim(PathBuf::from(r"\\?\UNC\server\share\app")), PathBuf::from(r"\\?\UNC\server\share\app"));
+        assert_eq!(strip_verbatim(PathBuf::from(r"C:\app")), PathBuf::from(r"C:\app"));
+        assert_eq!(strip_verbatim(PathBuf::from("/opt/alohamora/resources")), PathBuf::from("/opt/alohamora/resources"));
+    }
+
+    #[test]
+    fn exe_names_follow_the_platform() {
+        assert_eq!(exe_name("ffmpeg"), if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" });
+        assert_eq!(p2s(Path::new("a/b c.mp4")), "a/b c.mp4");
+    }
+}

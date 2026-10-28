@@ -1,0 +1,81 @@
+{
+  "_about": "Golden cases for src/shared/pdfReflow.ts and crates/core/src/pdf_reflow.rs (PDF to DOCX/EPUB/TXT). Text items use top-left page coordinates like pdf.js.",
+  "reflowPages": [
+    { "args": [[
+        { "width": 600, "height": 800, "items": [
+          { "str": "Annual Report 2026", "x": 50, "y": 20, "w": 120, "h": 9, "fontSize": 9, "bold": false, "italic": false },
+          { "str": "Introduction", "x": 50, "y": 100, "w": 160, "h": 24, "fontSize": 24, "bold": true, "italic": false },
+          { "str": "Alohamora converts files on your com-", "x": 50, "y": 140, "w": 480, "h": 12, "fontSize": 12, "bold": false, "italic": false },
+          { "str": "puter without sending them", "x": 50, "y": 156, "w": 250, "h": 12, "fontSize": 12, "bold": false, "italic": false },
+          { "str": "anywhere.", "x": 304, "y": 156, "w": 60, "h": 12, "fontSize": 12, "bold": false, "italic": true },
+          { "str": "It never needs a network connection.", "x": 50, "y": 172, "w": 300, "h": 12, "fontSize": 12, "bold": false, "italic": false },
+          { "str": "• Images", "x": 50, "y": 204, "w": 100, "h": 12, "fontSize": 12, "bold": false, "italic": false },
+          { "str": "• Videos & audio", "x": 50, "y": 220, "w": 150, "h": 12, "fontSize": 12, "bold": false, "italic": false },
+          { "str": "1", "x": 295, "y": 780, "w": 6, "h": 9, "fontSize": 9, "bold": false, "italic": false }
+        ] },
+        { "width": 600, "height": 800, "items": [
+          { "str": "Annual Report 2026", "x": 50, "y": 20, "w": 120, "h": 9, "fontSize": 9, "bold": false, "italic": false },
+          { "str": "Details", "x": 50, "y": 100, "w": 60, "h": 12, "fontSize": 12, "bold": true, "italic": false },
+          { "str": "Settings are kept between runs and", "x": 50, "y": 130, "w": 470, "h": 12, "fontSize": 12, "bold": false, "italic": false },
+          { "str": "can be reset at any time.", "x": 50, "y": 146, "w": 200, "h": 12, "fontSize": 12, "bold": false, "italic": false },
+          { "str": "Page 2 of 2", "x": 270, "y": 780, "w": 60, "h": 9, "fontSize": 9, "bold": false, "italic": false }
+        ] }
+      ], { "pageBreaks": false }], "out": [{"type":"h1","runs":[{"text":"Introduction","bold":true,"italic":false}]},{"type":"p","runs":[{"text":"Alohamora converts files on your computer without sending them","bold":false,"italic":false},{"text":" anywhere.","bold":false,"italic":true}]},{"type":"p","runs":[{"text":"It never needs a network connection.","bold":false,"italic":false}]},{"type":"li","runs":[{"text":"Images","bold":false,"italic":false}]},{"type":"li","runs":[{"text":"Videos & audio","bold":false,"italic":false}]},{"type":"h3","runs":[{"text":"Details","bold":true,"italic":false}]},{"type":"p","runs":[{"text":"Settings are kept between runs and can be reset at any time.","bold":false,"italic":false}]}] },
+    { "args": [[
+        { "width": 600, "height": 800, "items": [
+          { "str": "First page text.", "x": 50, "y": 100, "w": 120, "h": 12, "fontSize": 12, "bold": false, "italic": false }
+        ] },
+        { "width": 600, "height": 800, "items": [
+          { "str": "Second page text.", "x": 50, "y": 100, "w": 130, "h": 12, "fontSize": 12, "bold": false, "italic": false }
+        ] }
+      ], { "pageBreaks": true }], "out": [{"type":"p","runs":[{"text":"First page text.","bold":false,"italic":false}]},{"type":"pagebreak"},{"type":"p","runs":[{"text":"Second page text.","bold":false,"italic":false}]}] },
+    { "args": [[], { "pageBreaks": false }], "out": [] }
+  ],
+  "isScanned": [
+    { "args": [[]], "out": false },
+    { "args": [[{ "width": 600, "height": 800, "items": [
+        { "str": "  12  ", "x": 50, "y": 780, "w": 10, "h": 9, "fontSize": 9, "bold": false, "italic": false } ] }]], "out": true },
+    { "args": [[{ "width": 600, "height": 800, "items": [
+        { "str": "This page has more than twenty-five characters.", "x": 50, "y": 100, "w": 300, "h": 12, "fontSize": 12, "bold": false, "italic": false } ] }]], "out": false }
+  ],
+  "textToBlocks": [
+    { "args": ["First line\nsame paragraph\n\n  \n Second paragraph  \n\n\n"],
+      "out": [{ "type": "p", "runs": [{ "text": "First line same paragraph", "bold": false, "italic": false }] },
+              { "type": "p", "runs": [{ "text": "Second paragraph", "bold": false, "italic": false }] }] },
+    { "args": [""], "out": [] }
+  ],
+  "blocksToText": [
+    { "args": [[
+        { "type": "h1", "runs": [{ "text": "Title", "bold": true, "italic": false }] },
+        { "type": "p", "runs": [{ "text": "Some  ", "bold": false, "italic": false }, { "text": " words", "bold": false, "italic": true }] },
+        { "type": "pagebreak" },
+        { "type": "li", "runs": [{ "text": "item", "bold": false, "italic": false }] }
+      ]], "out": "Title\n\nSome words\n\n• item\n" },
+    { "args": [[]], "out": "\n" }
+  ],
+  "blocksToXhtml": [
+    { "args": [[
+        { "type": "h2", "runs": [{ "text": "A & B", "bold": false, "italic": false }] },
+        { "type": "li", "runs": [{ "text": "one", "bold": true, "italic": true }] },
+        { "type": "li", "runs": [{ "text": "<two>", "bold": false, "italic": false }] },
+        { "type": "pagebreak" },
+        { "type": "p", "runs": [{ "text": "end", "bold": false, "italic": false }] },
+        { "type": "li", "runs": [{ "text": "last", "bold": false, "italic": false }] }
+      ]], "out": "<h2>A &amp; B</h2>\n<ul>\n<li><strong><em>one</em></strong></li>\n<li>&lt;two&gt;</li>\n</ul>\n<p>end</p>\n<ul>\n<li>last</li>\n</ul>" }
+  ],
+  "splitChapters": [
+    { "args": [[
+        { "type": "p", "runs": [{ "text": "Preface", "bold": false, "italic": false }] },
+        { "type": "h1", "runs": [{ "text": " Chapter  One ", "bold": true, "italic": false }] },
+        { "type": "p", "runs": [{ "text": "x", "bold": false, "italic": false }] },
+        { "type": "h1", "runs": [{ "text": "Two", "bold": true, "italic": false }] }
+      ], "My Book"], "out": [
+        { "title": "My Book", "blocks": [{ "type": "p", "runs": [{ "text": "Preface", "bold": false, "italic": false }] }] },
+        { "title": "Chapter One", "blocks": [
+          { "type": "h1", "runs": [{ "text": " Chapter  One ", "bold": true, "italic": false }] },
+          { "type": "p", "runs": [{ "text": "x", "bold": false, "italic": false }] } ] },
+        { "title": "Two", "blocks": [{ "type": "h1", "runs": [{ "text": "Two", "bold": true, "italic": false }] }] }
+      ] },
+    { "args": [[], "Empty"], "out": [] }
+  ]
+}

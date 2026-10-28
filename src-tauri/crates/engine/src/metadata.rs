@@ -152,3 +152,34 @@ pub fn read_metadata(p: &Path) -> Result<MetadataInfo> {
         _ => Err(AppError::other("No metadata reader for this file type")),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exif_dates_become_datetime_local_values() {
+        assert_eq!(local_input("2024:05:01 14:30:00"), "2024-05-01T14:30");
+        assert_eq!(local_input("2024:05:01 14:30"), "2024-05-01T14:30");
+        assert_eq!(local_input("2024-05-01 14:30:00"), "", "not the EXIF layout");
+        assert_eq!(local_input("2024:05:01"), "");
+        assert_eq!(local_input(""), "");
+    }
+
+    #[test]
+    fn pdf_dates_are_shown_readably() {
+        assert_eq!(pdf_date("D:20240501143000+02'00'"), "2024-05-01 14:30:00");
+        assert_eq!(pdf_date("20240501143000Z"), "2024-05-01 14:30:00");
+        assert_eq!(pdf_date("D:2024"), "D:2024", "too short: shown as stored");
+        assert_eq!(pdf_date("yesterday"), "yesterday");
+    }
+
+    #[test]
+    fn exif_numbers() {
+        assert_eq!(rational_f64(&Value::Rational(vec![exif::Rational { num: 1, denom: 4 }])), Some(0.25));
+        assert_eq!(rational_f64(&Value::SRational(vec![exif::SRational { num: -3, denom: 2 }])), Some(-1.5));
+        assert_eq!(rational_f64(&Value::Short(vec![400])), Some(400.0));
+        assert_eq!(rational_f64(&Value::Long(vec![])), None);
+        assert_eq!(rational_f64(&Value::Ascii(vec![b"x".to_vec()])), None);
+    }
+}

@@ -1,0 +1,63 @@
+{
+  "_about": "Golden cases for src/shared/time.ts and its Rust port crates/core/src/time.rs. Both test suites run every case (see src/shared/golden/README.md).",
+  "parseTimecode": [
+    { "args": ["1:02:03.5"], "out": 3723.5 },
+    { "args": ["00:00:01,500"], "out": 1.5 },
+    { "args": ["02:03"], "out": 123 },
+    { "args": ["75"], "out": 75 },
+    { "args": ["  12.25 "], "out": 12.25 },
+    { "args": ["1,5"], "out": 1.5 },
+    { "args": ["1:2:3"], "out": 3723 },
+    { "args": ["1:75"], "out": 135 },
+    { "args": ["1:02:03:04"], "out": null },
+    { "args": ["1:120"], "out": null },
+    { "args": ["5."], "out": null },
+    { "args": ["-5"], "out": null },
+    { "args": ["abc"], "out": null },
+    { "args": [""], "out": null }
+  ],
+  "formatTimecode": [
+    { "args": [5.41], "out": "0:05.41" },
+    { "args": [3725.5], "out": "1:02:05.50" },
+    { "args": [0], "out": "0:00.00" },
+    { "args": [-3], "out": "0:00.00" },
+    { "args": [0.07], "out": "0:00.07" },
+    { "args": [59.999], "out": "0:59.99" },
+    { "args": [600], "out": "10:00.00" },
+    { "args": [36000], "out": "10:00:00.00" }
+  ],
+  "formatSrtTime": [
+    { "args": [3723.5], "out": "01:02:03,500" },
+    { "args": [0.0015], "out": "00:00:00,002" },
+    { "args": [-4], "out": "00:00:00,000" },
+    { "args": [360000], "out": "100:00:00,000" }
+  ],
+  "formatVttTime": [
+    { "args": [1.5], "out": "00:00:01.500" },
+    { "args": [61.001], "out": "00:01:01.001" },
+    { "args": [3723.5], "out": "01:02:03.500" }
+  ],
+  "formatDuration": [
+    { "args": [65], "out": "1:05" },
+    { "args": [3725], "out": "1:02:05" },
+    { "args": [59.5], "out": "1:00" },
+    { "args": [2.5], "out": "0:03" },
+    { "args": [0], "out": "0:00" },
+    { "args": [-10], "out": "0:00" },
+    { "args": [3600], "out": "1:00:00" }
+  ],
+  "formatBytes": [
+    { "args": [0], "out": "0 B" },
+    { "args": [1023], "out": "1023 B" },
+    { "args": [1024], "out": "1.0 KB" },
+    { "args": [1075], "out": "1.0 KB" },
+    { "args": [1280], "out": "1.3 KB" },
+    { "args": [1536], "out": "1.5 KB" },
+    { "args": [102400], "out": "100 KB" },
+    { "args": [1048576], "out": "1.0 MB" },
+    { "args": [5242880], "out": "5.0 MB" },
+    { "args": [157286400], "out": "150 MB" },
+    { "args": [1099511627776], "out": "1.0 TB" },
+    { "args": [1125899906842624], "out": "1024 TB" }
+  ]
+}

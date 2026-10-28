@@ -44,13 +44,27 @@ Other scripts:
 
 | Script | What it does |
 |---|---|
-| `npm test` | UI and shared-logic unit tests (Vitest) |
+| `npm run verify` | Everything below that needs no build: typecheck, Vitest, Rust tests and clippy. Run it before pushing |
+| `npm test` | UI, shared-logic and build-script tests (Vitest) |
 | `npm run typecheck` | Type-check the UI and shared TypeScript |
-| `cargo test --manifest-path src-tauri/Cargo.toml --workspace` | Rust unit tests |
+| `npm run test:rust` | Rust unit tests and the golden cases (`cargo test --workspace`) |
+| `npm run lint:rust` | `cargo clippy` with warnings as errors, as in CI |
 | `npm run selftest` | End-to-end self-test: real files through every conversion and tool (`-- --only=av` for one group) |
 | `npm run gen:registry` | Regenerate `src/shared/registry/*.json` after changing formats, tools or defaults |
 | `npm run check:offline` / `check:licenses` | The offline guarantee and the licence policy (CI runs both) |
 | `npm run build` | Package installers for the current OS into `src-tauri/target/release/bundle/` |
+
+### Tests
+
+- **Unit tests** sit next to the code: `*.test.ts` files for TypeScript, `#[cfg(test)] mod tests` at the end of each Rust file.
+- **Golden cases** (`src/shared/golden/*.json`): inputs and expected outputs for the logic that exists twice, once in TypeScript
+  for the UI's previews and once in Rust for the real work (time codes, file names, page ranges, split points, subtitles, crop
+  rectangles, collage layout, the edit pipeline, PDF reflow). `src/shared/golden.test.ts` and
+  `src-tauri/crates/core/tests/golden.rs` run every case, so the two can never drift apart. When you fix a bug in one of these,
+  add its input as a case first.
+- **Self-test** (`npm run selftest`): real files through every conversion and tool, with the bundled FFmpeg, PDFium and Tesseract.
+
+CI runs all three on Windows, macOS and Linux for every push and pull request.
 
 ## HEIC output
 

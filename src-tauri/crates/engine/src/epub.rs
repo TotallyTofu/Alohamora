@@ -165,3 +165,69 @@ pub fn build_fixed_epub(meta: &EpubMeta, pages: &[FixedPage]) -> Result<Vec<u8>>
     files.push(("OEBPS/content.opf".to_string(), opf_xml(meta, true, &items, &images).into_bytes()));
     pack(files)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Read;
+
+    fn names_and_text(bytes: &[u8]) -> Vec<(String, String)> {
+        let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).expect("a valid zip");
+        (0..zip.len())
+            .map(|i| {
+                let mut f = zip.by_index(i).unwrap();
+                let mut data = Vec::new();
+                f.read_to_end(&mut data).unwrap();
+                (f.name().to_string(), String::from_utf8_lossy(&data).to_string())
+            })
+            .collect()
+    }
+
+    /// EPUB readers find the `mimetype` entry at a fixed place: first, stored, no extra field.
+    fn assert_epub_header(bytes: &[u8]) {
+        assert_eq!(&bytes[0..4], b"PK\x03\x04");
+        assert_eq!(u16::from_le_bytes([bytes[8], bytes[9]]), 0, "mimetype must be stored, not compressed");
+        assert_eq!(u16::from_le_bytes([bytes[28], bytes[29]]), 0, "mimetype must have no extra field");
+        assert_eq!(&bytes[30..38], b"mimetype");
+        assert_eq!(&bytes[38..58], b"application/epub+zip");
+    }
+
+    #[test]
+    fn reflowable_book() {
+        let meta = EpubMeta { title: "Tom & Jerry".into(), author: Some("A <B>".into()), lang: "vi".into() };
+        let chapters = vec![
+            Chapter { title: "One".into(), body_xhtml: "<p>first</p>".into() },
+            Chapter { title: "Two & more".into(), body_xhtml: "<p>second</p>".into() },
+        ];
+        let bytes = build_reflow_epub(&meta, &chapters).expect("epub");
+        assert_epub_header(&bytes);
+        let files = names_and_text(&bytes);
+        let names: Vec<&str> = files.iter().map(|(n, _)| n.as_str()).collect();
+        assert_eq!(names, ["mimetype", "META-INF/container.xml", "OEBPS/style.css", "OEBPS/nav.xhtml", "OEBPS/c001.xhtml", "OEBPS/c002.xhtml", "OEBPS/content.opf"]);
+        let get = |n: &str| files.iter().find(|(name, _)| name == n).map(|(_, t)| t.clone()).unwrap();
+        let opf = get("OEBPS/content.opf");
+        assert!(opf.contains("<dc:title>Tom &amp; Jerry</dc:title>"));
+        assert!(opf.contains("<dc:creator>A &lt;B&gt;</dc:creator>"));
+        assert!(opf.contains("<dc:language>vi</dc:language>"));
+        assert!(opf.contains(r#"<itemref idref="c001"/>"#) && opf.contains(r#"<itemref idref="c002"/>"#));
+        assert!(!opf.contains("pre-paginated"));
+        assert!(get("OEBPS/nav.xhtml").contains(r#"<a href="c002.xhtml">Two &amp; more</a>"#));
+        assert!(get("OEBPS/c001.xhtml").contains("<p>first</p>"));
+    }
+
+    #[test]
+    fn fixed_layout_book() {
+        let meta = EpubMeta { title: "Scan".into(), author: None, lang: "en".into() };
+        let pages = vec![FixedPage { jpeg: vec![0xFF, 0xD8, 0xFF], width: 600, height: 800 }, FixedPage { jpeg: vec![0xFF, 0xD8], width: 600, height: 800 }];
+        let bytes = build_fixed_epub(&meta, &pages).expect("epub");
+        assert_epub_header(&bytes);
+        let files = names_and_text(&bytes);
+        let has = |n: &str| files.iter().any(|(name, _)| name == n);
+        assert!(has("OEBPS/images/p001.jpg") && has("OEBPS/images/p002.jpg") && has("OEBPS/p002.xhtml"));
+        let opf = &files.iter().find(|(n, _)| n == "OEBPS/content.opf").unwrap().1;
+        assert!(opf.contains("pre-paginated"));
+        assert!(!opf.contains("dc:creator"));
+        let page = &files.iter().find(|(n, _)| n == "OEBPS/p001.xhtml").unwrap().1;
+        assert!(page.contains(r#"content="width=600, height=800""#) && page.contains(r#"src="images/p001.jpg""#));
+    }
+}

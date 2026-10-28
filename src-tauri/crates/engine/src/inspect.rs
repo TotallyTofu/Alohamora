@@ -115,3 +115,27 @@ pub fn inspect_files(paths: &[String], deep: bool) -> Vec<FileInfo> {
     }
     map_limit(&basic, 4, inspect_deep)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::TempDir;
+
+    #[test]
+    fn folders_expand_to_their_files_sorted_and_deduplicated() {
+        let dir = TempDir::new("expand");
+        let b = dir.file("b.png", b"");
+        dir.file("A.jpg", b"");
+        std::fs::create_dir(dir.path().join("sub")).unwrap();
+        std::fs::write(dir.path().join("sub").join("deep.txt"), b"").unwrap();
+        let folder = dir.path().to_string_lossy().to_string();
+        let b = b.to_string_lossy().to_string();
+        let missing = dir.path().join("missing.mp4").to_string_lossy().to_string();
+
+        let out = expand_paths(&[folder, b.clone(), missing]);
+        let names: Vec<String> = out.iter().map(|p| base_name(p)).collect();
+        assert_eq!(names, ["A.jpg", "b.png"], "direct files only, by name, b.png once, missing paths dropped");
+        assert!(out.iter().all(|p| Path::new(p).is_absolute()));
+        assert!(expand_paths(&[]).is_empty());
+    }
+}

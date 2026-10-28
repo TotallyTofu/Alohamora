@@ -186,3 +186,66 @@ pub fn page_images_to_docx(pages: &[(Vec<u8>, f64, f64)]) -> Result<Vec<u8>> {
     let last = pages.last().map(|(_, w, h)| page_section(*w, *h)).unwrap_or_else(|| A4_SECTION.to_string());
     b.finish(&last)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Read;
+
+    fn unzip(bytes: &[u8]) -> std::collections::BTreeMap<String, String> {
+        let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).expect("a valid zip");
+        (0..zip.len())
+            .map(|i| {
+                let mut f = zip.by_index(i).unwrap();
+                let mut data = Vec::new();
+                f.read_to_end(&mut data).unwrap();
+                (f.name().to_string(), String::from_utf8_lossy(&data).to_string())
+            })
+            .collect()
+    }
+
+    fn run(text: &str, bold: bool, italic: bool) -> Run {
+        Run { text: text.into(), bold, italic }
+    }
+
+    #[test]
+    fn xml_text_escapes_and_drops_forbidden_characters() {
+        assert_eq!(xml_text("a<b>&\"c\""), "a&lt;b&gt;&amp;&quot;c&quot;");
+        assert_eq!(xml_text("tab\there\nnew"), "tab here new");
+        assert_eq!(xml_text("bell\u{7}\u{FFFF}end"), "bellend");
+        assert_eq!(xml_text("Tiếng Việt"), "Tiếng Việt");
+    }
+
+    #[test]
+    fn reflowed_blocks_make_a_complete_package() {
+        let blocks = vec![
+            Block::Text { kind: BlockKind::H1, runs: vec![run("Title & more", true, false)] },
+            Block::Text { kind: BlockKind::P, runs: vec![run("plain ", false, false), run("bold", true, false), run(" italic", false, true)] },
+            Block::PageBreak,
+            Block::Text { kind: BlockKind::Li, runs: vec![run("item\u{1}", false, false)] },
+        ];
+        let files = unzip(&blocks_to_docx(&blocks, "My <Doc>").expect("docx"));
+        for part in ["[Content_Types].xml", "_rels/.rels", "docProps/core.xml", "word/document.xml", "word/_rels/document.xml.rels", "word/styles.xml", "word/numbering.xml"] {
+            assert!(files.contains_key(part), "missing {part}");
+        }
+        let doc = &files["word/document.xml"];
+        assert!(doc.contains(r#"<w:pStyle w:val="Heading1"/>"#));
+        assert!(doc.contains("Title &amp; more"));
+        assert!(doc.contains(r#"<w:rPr><w:b/></w:rPr><w:t xml:space="preserve">bold</w:t>"#));
+        assert!(doc.contains(r#"<w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> italic</w:t>"#));
+        assert!(doc.contains(r#"<w:br w:type="page"/>"#));
+        assert!(doc.contains(r#"<w:numId w:val="1"/>"#));
+        assert!(doc.contains(">item</w:t>"), "control characters are dropped");
+        assert!(files["docProps/core.xml"].contains("<dc:title>My &lt;Doc&gt;</dc:title>"));
+    }
+
+    #[test]
+    fn pictures_are_embedded_and_scaled_to_the_page() {
+        let images = [EmbeddableImage { data: vec![0x89, b'P', b'N', b'G'], kind: EmbedKind::Png, width: 1248, height: 100 }];
+        let files = unzip(&images_to_docx(&images).expect("docx"));
+        assert!(files.contains_key("word/media/image1.png"));
+        assert!(files["word/_rels/document.xml.rels"].contains(r#"Id="rIdImg1""#));
+        // 1248 px wide is scaled to 624 px (6.5 in), i.e. 624 × 9525 EMU.
+        assert!(files["word/document.xml"].contains(&format!(r#"cx="{}" cy="{}""#, 624 * EMU_PER_PX, 50 * EMU_PER_PX)));
+    }
+}

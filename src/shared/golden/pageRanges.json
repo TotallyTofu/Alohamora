@@ -1,0 +1,42 @@
+{
+  "_about": "Golden cases for src/shared/pageRanges.ts, src/shared/pdfSplit.ts and their Rust ports (page_ranges.rs, pdf_split.rs). \"err\" is the exact user-facing message.",
+  "parsePageRanges": [
+    { "args": ["", 3], "out": [[0, 1, 2]] },
+    { "args": ["   ", 2], "out": [[0, 1]] },
+    { "args": ["", 0], "out": [[]] },
+    { "args": ["1-2, 3", 3], "out": [[0, 1], [2]] },
+    { "args": ["2-", 4], "out": [[1, 2, 3]] },
+    { "args": ["-2", 4], "out": [[0, 1]] },
+    { "args": ["-", 3], "out": [[0, 1, 2]] },
+    { "args": ["3 - 3", 5], "out": [[2]] },
+    { "args": ["1,,2", 3], "out": [[0], [1]] },
+    { "args": ["2,2", 3], "out": [[1], [1]] },
+    { "args": ["5", 3], "err": "Page 5 doesn't exist (this PDF has 3 pages)" },
+    { "args": ["1-9", 4], "err": "Page 9 doesn't exist (this PDF has 4 pages)" },
+    { "args": ["x", 3], "err": "\"x\" is not a page range. Use something like 1-3, 5, 8-" },
+    { "args": ["1.5", 3], "err": "\"1.5\" is not a page range. Use something like 1-3, 5, 8-" },
+    { "args": ["1-2-3", 3], "err": "\"1-2-3\" is not a page range. Use something like 1-3, 5, 8-" },
+    { "args": ["3-1", 5], "err": "\"3-1\" goes backwards" },
+    { "args": ["0", 5], "err": "Page numbers start at 1" },
+    { "args": ["2-", 0], "err": "Page numbers start at 1" },
+    { "args": [",", 5], "err": "No pages selected" }
+  ],
+  "flattenRanges": [
+    { "args": [[[0, 1], [1, 2], [0]]], "out": [0, 1, 2] },
+    { "args": [[[2], [0, 1]]], "out": [2, 0, 1] },
+    { "args": [[]], "out": [] }
+  ],
+  "splitGroups": [
+    { "args": [{ "mode": "each", "every": 1, "ranges": "" }, 3], "out": [[0], [1], [2]] },
+    { "args": [{ "mode": "each", "every": 1, "ranges": "" }, 0], "out": [] },
+    { "args": [{ "mode": "every", "every": 2, "ranges": "" }, 5], "out": [[0, 1], [2, 3], [4]] },
+    { "args": [{ "mode": "every", "every": 2.5, "ranges": "" }, 7], "out": [[0, 1, 2], [3, 4, 5], [6]] },
+    { "args": [{ "mode": "every", "every": 0, "ranges": "" }, 2], "out": [[0], [1]] },
+    { "args": [{ "mode": "every", "every": -3, "ranges": "" }, 2], "out": [[0], [1]] },
+    { "args": [{ "mode": "ranges", "every": 1, "ranges": "1-2,3" }, 3], "out": [[0, 1], [2]] },
+    { "args": [{ "mode": "extract", "every": 1, "ranges": "2, 1-2" }, 3], "out": [[1, 0]] },
+    { "args": [{ "mode": "ranges", "every": 1, "ranges": "9" }, 3], "err": "Page 9 doesn't exist (this PDF has 3 pages)" },
+    { "args": [{ "mode": "extract", "every": 1, "ranges": "  " }, 3], "err": "Enter the pages to use, for example 1-3, 5" },
+    { "args": [{ "mode": "ranges", "every": 1, "ranges": "" }, 3], "err": "Enter the pages to use, for example 1-3, 5" }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "_about": "Golden cases for src/shared/naming.ts and crates/core/src/naming.rs. An absent suffix is passed as \"\".",
+  "splitName": [
+    { "args": ["a.b.mp4"], "out": { "base": "a.b", "ext": "mp4" } },
+    { "args": [".bashrc"], "out": { "base": ".bashrc", "ext": "" } },
+    { "args": ["README"], "out": { "base": "README", "ext": "" } },
+    { "args": ["archive."], "out": { "base": "archive", "ext": "" } },
+    { "args": ["..x"], "out": { "base": ".", "ext": "x" } },
+    { "args": ["Ảnh đẹp.JPEG"], "out": { "base": "Ảnh đẹp", "ext": "JPEG" } }
+  ],
+  "outputFileName": [
+    { "args": ["clip", "mp4", "trimmed"], "out": "clip-trimmed.mp4" },
+    { "args": ["photo", "jpg", ""], "out": "photo.jpg" }
+  ],
+  "groupFolderName": [
+    { "args": ["report", "pages"], "out": "report-pages" }
+  ],
+  "groupFileName": [
+    { "args": ["report", 3, 120, "jpg"], "out": "report-003.jpg" },
+    { "args": ["report", 7, 12345, "jpg"], "out": "report-00007.jpg" },
+    { "args": ["p", 1000, 1000, "png"], "out": "p-1000.png" },
+    { "args": ["p", 12, 9, "png"], "out": "p-012.png" }
+  ],
+  "withCounter": [
+    { "args": ["a.jpg", 2], "out": "a (2).jpg" },
+    { "args": ["folder", 1], "out": "folder (1)" },
+    { "args": [".env", 3], "out": ".env (3)" },
+    { "args": ["a.tar.gz", 1], "out": "a.tar (1).gz" }
+  ],
+  "sanitizeFileName": [
+    { "args": ["a<b>:c\"d/e\\f|g?h*i"], "out": "a_b__c_d_e_f_g_h_i" },
+    { "args": ["name. "], "out": "name" },
+    { "args": ["...."], "out": "output" },
+    { "args": ["   "], "out": "output" },
+    { "args": [""], "out": "output" },
+    { "args": [" lead"], "out": "lead" },
+    { "args": ["tab\there\u0001"], "out": "tab_here_" },
+    { "args": ["Tiếng Việt.txt"], "out": "Tiếng Việt.txt" }
+  ]
+}

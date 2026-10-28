@@ -22,6 +22,8 @@ pub mod paths;
 pub mod process;
 pub mod selftest;
 pub mod settings;
+#[cfg(test)]
+mod test_util;
 pub mod text_pdf;
 pub mod thumbnails;
 pub mod tools;

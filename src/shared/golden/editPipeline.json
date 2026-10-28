@@ -1,0 +1,23 @@
+{
+  "_about": "Golden cases for src/shared/editPipeline.ts and crates/core/src/edit_pipeline.rs. The argument is merged over the image.edit defaults first.",
+  "buildEditSpec": [
+    { "args": [{}], "out": { "linear": null, "modulate": null, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "exposure": 1 }], "out": { "linear": [2, 0], "modulate": null, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "contrast": 50 }], "out": { "linear": [1.5, -64], "modulate": null, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "brightness": 10 }], "out": { "linear": [1, 12.8], "modulate": null, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "exposure": 0.5, "contrast": -20 }], "out": { "linear": [1.1313708498984762, 25.6], "modulate": null, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "saturation": -100 }], "out": { "linear": null, "modulate": { "saturation": 0, "hue": 0 }, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "hue": 90.4 }], "out": { "linear": null, "modulate": { "saturation": 1, "hue": 90 }, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "hue": -90.5 }], "out": { "linear": null, "modulate": { "saturation": 1, "hue": -90 }, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "warmth": -50 }], "out": { "linear": null, "modulate": null, "recomb": [[0.94, 0, 0], [0, 1, 0], [0, 0, 1.06]], "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "effect": "sepia", "warmth": 100 }], "out": { "linear": null, "modulate": null,
+      "recomb": [[0.44016, 0.769, 0.16632], [0.39088, 0.686, 0.14784], [0.30464, 0.534, 0.11528]],
+      "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "effect": "vintage" }], "out": { "linear": null, "modulate": null,
+      "recomb": [[0.6965, 0.3845, 0.0945], [0.1745, 0.843, 0.084], [0.136, 0.267, 0.5655]],
+      "grayscale": false, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0.35 } },
+    { "args": [{ "effect": "bw" }], "out": { "linear": null, "modulate": null, "recomb": null, "grayscale": true, "negate": false, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "effect": "invert" }], "out": { "linear": null, "modulate": null, "recomb": null, "grayscale": false, "negate": true, "sharpenSigma": null, "blurSigma": null, "vignette": 0 } },
+    { "args": [{ "detail": 40, "blur": 50, "vignette": 250 }], "out": { "linear": null, "modulate": null, "recomb": null, "grayscale": false, "negate": false, "sharpenSigma": 1.5, "blurSigma": 10.3, "vignette": 1 } }
+  ]
+}

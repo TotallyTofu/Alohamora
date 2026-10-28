@@ -21,6 +21,7 @@
     "vite.config.ts",
     "vitest.config.ts",
     "src/shared/**/*",
-    "src/renderer/**/*.test.ts"
+    "src/renderer/**/*.test.ts",
+    "scripts/**/*.test.ts"
   ]
 }

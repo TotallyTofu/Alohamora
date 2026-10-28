@@ -74,3 +74,31 @@ pub fn tag_pairs(tags: &serde_json::Map<String, Value>) -> Vec<(String, String)>
         }))
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn file(path: &str) -> FileInfo {
+        FileInfo { path: path.into(), ..Default::default() }
+    }
+
+    #[test]
+    fn user_order_first_then_the_rest_in_input_order() {
+        let files = vec![file("/a"), file("/b"), file("/c"), file("/d")];
+        let paths = |v: Vec<FileInfo>| v.into_iter().map(|f| f.path).collect::<Vec<_>>();
+        assert_eq!(paths(order_files(&files, &["/c".into(), "/a".into()])), ["/c", "/a", "/b", "/d"]);
+        assert_eq!(paths(order_files(&files, &["/gone".into(), "/d".into()])), ["/d", "/a", "/b", "/c"]);
+        assert_eq!(paths(order_files(&files, &[])), ["/a", "/b", "/c", "/d"]);
+    }
+
+    #[test]
+    fn tags_keep_the_ui_order_and_stringify_values() {
+        let tags = json!({ "title": "Song", "track": 3, "explicit": false, "comment": "" });
+        let pairs = tag_pairs(tags.as_object().unwrap());
+        let want: Vec<(String, String)> =
+            [("title", "Song"), ("track", "3"), ("explicit", "false"), ("comment", "")].iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+        assert_eq!(pairs, want);
+    }
+}

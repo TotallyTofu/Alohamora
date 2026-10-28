@@ -1,0 +1,27 @@
+{
+  "_about": "Golden cases for src/shared/split.ts (the Split panel's preview) and crates/core/src/split.rs (the real cut points). Args: [durationSec, VideoSplitOptions].",
+  "splitSegments": [
+    { "args": [10, { "mode": "parts", "times": [], "parts": 2, "everySec": 60, "precise": false }],
+      "out": [{ "start": 0, "end": 5 }, { "start": 5, "end": 10 }] },
+    { "args": [10, { "mode": "parts", "times": [], "parts": 3, "everySec": 60, "precise": false }],
+      "out": [{ "start": 0, "end": 3.333 }, { "start": 3.333, "end": 6.667 }, { "start": 6.667, "end": 10 }] },
+    { "args": [10, { "mode": "parts", "times": [], "parts": 1, "everySec": 60, "precise": false }],
+      "out": [{ "start": 0, "end": 5 }, { "start": 5, "end": 10 }] },
+    { "args": [10, { "mode": "parts", "times": [], "parts": 2.4, "everySec": 60, "precise": false }],
+      "out": [{ "start": 0, "end": 5 }, { "start": 5, "end": 10 }] },
+    { "args": [10, { "mode": "every", "times": [], "parts": 2, "everySec": 4, "precise": false }],
+      "out": [{ "start": 0, "end": 4 }, { "start": 4, "end": 8 }, { "start": 8, "end": 10 }] },
+    { "args": [10, { "mode": "every", "times": [], "parts": 2, "everySec": 5, "precise": false }],
+      "out": [{ "start": 0, "end": 5 }, { "start": 5, "end": 10 }] },
+    { "args": [3.5, { "mode": "every", "times": [], "parts": 2, "everySec": 0.2, "precise": false }],
+      "out": [{ "start": 0, "end": 1 }, { "start": 1, "end": 2 }, { "start": 2, "end": 3 }, { "start": 3, "end": 3.5 }] },
+    { "args": [10, { "mode": "at", "times": [7, 3, 3, 0.01], "parts": 2, "everySec": 60, "precise": false }],
+      "out": [{ "start": 0, "end": 3 }, { "start": 3, "end": 7 }, { "start": 7, "end": 10 }] },
+    { "args": [10, { "mode": "at", "times": [9.97, 0.04, 5.0004], "parts": 2, "everySec": 60, "precise": false }],
+      "out": [{ "start": 0, "end": 5 }, { "start": 5, "end": 10 }] },
+    { "args": [10, { "mode": "at", "times": [2.0004, 2.0001], "parts": 2, "everySec": 60, "precise": false }],
+      "out": [{ "start": 0, "end": 2 }, { "start": 2, "end": 10 }] },
+    { "args": [4, { "mode": "at", "times": [], "parts": 2, "everySec": 60, "precise": false }],
+      "out": [{ "start": 0, "end": 4 }] }
+  ]
+}

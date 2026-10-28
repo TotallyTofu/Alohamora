@@ -99,3 +99,26 @@ pub fn text_to_pdf_with(text: &str, title: &str, font: TextFont, size_pt: f64, p
     typst_pdf::pdf(&doc, &typst_pdf::PdfOptions::default())
         .map_err(|e| AppError::tool("Could not write the PDF", format!("{e:?}")))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lines_are_prepared_for_typst() {
+        assert_eq!(prepare_line("a\tb"), "a        b");
+        assert_eq!(prepare_line("short words only"), "short words only");
+        let long = "x".repeat(85);
+        let want = format!("{}\u{200B}{}\u{200B}{}", "x".repeat(40), "x".repeat(40), "x".repeat(5));
+        assert_eq!(prepare_line(&long), want, "a break point after every 40 characters without a space");
+        let spaced = format!("{} {}", "y".repeat(40), "y".repeat(40));
+        assert_eq!(prepare_line(&spaced), spaced, "spaces reset the count");
+    }
+
+    #[test]
+    fn page_sizes_and_fonts() {
+        assert_eq!((paper(PageSize::A4), paper(PageSize::Letter), paper(PageSize::A5)), ("a4", "us-letter", "a5"));
+        assert_eq!(font_families(TextFont::Serif)[0], "Noto Serif");
+        assert_eq!(font_families(TextFont::Original), font_families(TextFont::Mono), "plain text keeps a monospace look");
+    }
+}

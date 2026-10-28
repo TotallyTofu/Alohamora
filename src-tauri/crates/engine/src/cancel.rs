@@ -23,3 +23,18 @@ impl CancelToken {
         if self.is_cancelled() { Err(AppError::Canceled) } else { Ok(()) }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clones_share_the_flag() {
+        let token = CancelToken::new();
+        let copy = token.clone();
+        assert!(token.check().is_ok());
+        copy.cancel();
+        assert!(token.is_cancelled());
+        assert!(token.check().unwrap_err().is_canceled());
+    }
+}

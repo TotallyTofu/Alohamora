@@ -1,0 +1,61 @@
+{
+  "_about": "Golden cases for src/shared/subtitles.ts and crates/core/src/subtitles.rs. textToCues uses the default reading speed, line length and gap.",
+  "parseSubtitles": [
+    { "args": ["﻿1\r\n00:00:01,000 --> 00:00:03,500\r\nHello <i>world</i>\r\n\r\n2\r\n00:00:04,000 --> 00:00:06,000\r\nSecond\r\nline\r\n"],
+      "out": [{ "start": 1, "end": 3.5, "text": "Hello <i>world</i>" }, { "start": 4, "end": 6, "text": "Second\nline" }] },
+    { "args": ["WEBVTT\n\nNOTE this is a comment\nspanning two lines\n\n00:01.000 --> 00:02.500 align:start position:0%\nFirst cue without an id\n\nintro\n00:00:03.000 --> 00:00:04.000\nSecond cue\n"],
+      "out": [{ "start": 1, "end": 2.5, "text": "First cue without an id" }, { "start": 3, "end": 4, "text": "Second cue" }] },
+    { "args": ["1\r00:00:01,000 --> 00:00:02,000\rOld Mac line endings\r\r"],
+      "out": [{ "start": 1, "end": 2, "text": "Old Mac line endings" }] },
+    { "args": ["1\n00:00:05,000 --> 00:00:04,000\nends before it starts\n\n2\n00:00:06,000 --> 00:00:07,000\n\n\n3\n00:00:01.5 --> 00:00:02.25\nshort fractions\n"],
+      "out": [{ "start": 5, "end": 5, "text": "ends before it starts" }, { "start": 1.5, "end": 2.25, "text": "short fractions" }] },
+    { "args": ["1\n100:00:00,000 --> 100:00:01,000\nlong film\n"],
+      "out": [{ "start": 360000, "end": 360001, "text": "long film" }] },
+    { "args": ["no cues here\n\njust text"], "out": [] },
+    { "args": [""], "out": [] }
+  ],
+  "stripTags": [
+    { "args": ["<v Bob><i>Hi</i> &amp; bye</v>", false], "out": "Hi & bye" },
+    { "args": ["<v Bob><i>Hi</i> &amp; bye</v>", true], "out": "<i>Hi</i> &amp; bye" },
+    { "args": ["<i class=\"x\">a</i>", true], "out": "<i>a</i>" },
+    { "args": ["<B>bold</B>", true], "out": "<B>bold</B>" },
+    { "args": ["<font color=\"red\">x</font>", false], "out": "x" },
+    { "args": ["<c.yellow>t</c>", false], "out": "t" },
+    { "args": ["a &nbsp;b &lt;3 &quot;q&quot;", false], "out": "a  b <3 \"q\"" },
+    { "args": ["&amp;lt;", false], "out": "&lt;" }
+  ],
+  "toSrt": [
+    { "args": [[{ "start": 0.5, "end": 2, "text": "A <b>b</b> &amp; c" }]], "out": "1\n00:00:00,500 --> 00:00:02,000\nA <b>b</b> &amp; c\n" },
+    { "args": [[{ "start": 0, "end": 1, "text": "<v Ann>one</v>" }, { "start": 1, "end": 2, "text": "two" }]],
+      "out": "1\n00:00:00,000 --> 00:00:01,000\none\n\n2\n00:00:01,000 --> 00:00:02,000\ntwo\n" },
+    { "args": [[]], "out": "" }
+  ],
+  "toVtt": [
+    { "args": [[{ "start": 0.5, "end": 2, "text": "A <b>b</b> &amp; c" }]], "out": "WEBVTT\n\n00:00:00.500 --> 00:00:02.000\nA <b>b</b> &amp; c\n" },
+    { "args": [[]], "out": "WEBVTT\n\n" }
+  ],
+  "toPlainText": [
+    { "args": [[{ "start": 0.5, "end": 2, "text": "A <b>b</b> &amp; c" }, { "start": 3, "end": 4, "text": "line\ntwo" }]], "out": "A b & c\nline\ntwo\n" },
+    { "args": [[]], "out": "\n" }
+  ],
+  "shiftCues": [
+    { "args": [[{ "start": 1, "end": 2, "text": "a" }, { "start": 0.2, "end": 0.8, "text": "b" }], -0.5],
+      "out": [{ "start": 0.5, "end": 1.5, "text": "a" }, { "start": 0, "end": 0.3, "text": "b" }] },
+    { "args": [[{ "start": 0, "end": 1, "text": "x" }], 2.25], "out": [{ "start": 2.25, "end": 3.25, "text": "x" }] },
+    { "args": [[{ "start": 0, "end": 1, "text": "gone" }], -5], "out": [] },
+    { "args": [[{ "start": 0, "end": 1, "text": "ends at zero" }], -1], "out": [] }
+  ],
+  "textToCues": [
+    { "args": ["a\n\nb", { "timing": "fixed", "secondsPerCue": 2 }],
+      "out": [{ "start": 0, "end": 2, "text": "a" }, { "start": 2.1, "end": 4.1, "text": "b" }] },
+    { "args": ["one\r\ntwo", { "timing": "fixed", "secondsPerCue": 1 }],
+      "out": [{ "start": 0, "end": 1, "text": "one" }, { "start": 1.1, "end": 2.1, "text": "two" }] },
+    { "args": ["Hello there", { "timing": "reading", "secondsPerCue": 3 }],
+      "out": [{ "start": 0, "end": 1.2, "text": "Hello there" }] },
+    { "args": ["  \r\n  \r\n", { "timing": "fixed", "secondsPerCue": 3 }], "out": [] },
+    { "args": ["this is a rather long subtitle sentence that needs two lines", { "timing": "reading", "secondsPerCue": 3 }],
+      "out": [{ "start": 0, "end": 4, "text": "this is a rather long subtitle\nsentence that needs two lines" }] },
+    { "args": ["Alohamora chuyển đổi tệp ngay trên máy của bạn mà không cần kết nối mạng, giữ dữ liệu riêng tư và an toàn tuyệt đối cho mọi người dùng.", { "timing": "reading", "secondsPerCue": 3 }],
+      "out": [{"start":0,"end":5.333333333333333,"text":"Alohamora chuyển đổi tệp ngay trên máy\ncủa bạn mà không cần kết nối mạng, giữ dữ"},{"start":5.433333333333333,"end":9.033333333333333,"text":"liệu riêng tư và an toàn\ntuyệt đối cho mọi người dùng."}] }
+  ]
+}

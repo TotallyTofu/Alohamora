@@ -60,3 +60,43 @@ pub fn data_url(mime: &str, bytes: &[u8]) -> String {
     use base64::Engine;
     format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::TempDir;
+
+    #[test]
+    fn move_file_moves_and_never_overwrites() {
+        let dir = TempDir::new("move");
+        let src = dir.file("a.txt", b"new");
+        let dest = dir.path().join("b.txt");
+        move_file(&src, &dest).expect("move");
+        assert!(!src.exists());
+        assert_eq!(std::fs::read(&dest).unwrap(), b"new");
+
+        let again = dir.file("c.txt", b"other");
+        assert!(move_file(&again, &dest).is_err(), "an existing destination must not be replaced");
+        assert_eq!(std::fs::read(&dest).unwrap(), b"new");
+        assert!(again.exists());
+    }
+
+    #[test]
+    fn remove_older_than_keeps_recent_files() {
+        let dir = TempDir::new("prune");
+        let old = dir.file("old.bin", b"x");
+        let recent = dir.file("recent.bin", b"y");
+        let two_hours_ago = SystemTime::now() - Duration::from_secs(7200);
+        std::fs::File::options().write(true).open(&old).unwrap().set_modified(two_hours_ago).unwrap();
+        assert_eq!(remove_older_than(dir.path(), Duration::from_secs(3600)), 1);
+        assert!(!old.exists());
+        assert!(recent.exists());
+        assert_eq!(remove_older_than(&dir.path().join("missing"), Duration::ZERO), 0);
+    }
+
+    #[test]
+    fn data_urls() {
+        assert_eq!(data_url("text/plain", b"hi"), "data:text/plain;base64,aGk=");
+        assert_eq!(data_url("image/png", b""), "data:image/png;base64,");
+    }
+}

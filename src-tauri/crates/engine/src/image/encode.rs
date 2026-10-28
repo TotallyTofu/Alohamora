@@ -232,3 +232,51 @@ pub fn encode_heic_file(input_png: &Path, out: &Path, quality: f64, cancel: Opti
 pub fn rgba(img: &DynamicImage) -> RgbaImage {
     img.to_rgba8()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample() -> DynamicImage {
+        DynamicImage::ImageRgba8(RgbaImage::from_fn(16, 12, |x, y| image::Rgba([x as u8 * 16, y as u8 * 20, 128, 255])))
+    }
+
+    #[test]
+    fn tools_keep_the_input_format_when_they_can_write_it() {
+        assert_eq!(same_image_fmt(Some(Fmt::Jpg), false), SaveFmt::Jpg);
+        assert_eq!(same_image_fmt(Some(Fmt::Webp), false), SaveFmt::Webp);
+        assert_eq!(same_image_fmt(Some(Fmt::Tiff), false), SaveFmt::Tiff);
+        assert_eq!(same_image_fmt(Some(Fmt::Heic), true), SaveFmt::Heic);
+        assert_eq!(same_image_fmt(Some(Fmt::Heic), false), SaveFmt::Jpg, "no HEIC encoder: JPG");
+        assert_eq!(same_image_fmt(Some(Fmt::Svg), false), SaveFmt::Png);
+        assert_eq!(same_image_fmt(None, false), SaveFmt::Png);
+        assert_eq!(SaveFmt::Tiff.ext(), "tiff");
+    }
+
+    #[test]
+    fn flatten_blends_onto_the_background() {
+        let img = DynamicImage::ImageRgba8(RgbaImage::from_vec(3, 1, vec![255, 0, 0, 0, 255, 0, 0, 255, 0, 0, 0, 128]).unwrap());
+        let flat = flatten(&img, [255, 255, 255]);
+        assert_eq!(flat.get_pixel(0, 0).0, [255, 255, 255], "fully transparent: background");
+        assert_eq!(flat.get_pixel(1, 0).0, [255, 0, 0], "opaque stays");
+        assert_eq!(flat.get_pixel(2, 0).0, [127, 127, 127], "half transparent black on white");
+    }
+
+    #[test]
+    fn every_encoder_writes_a_readable_file() {
+        let img = sample();
+        let cases: [(SaveFmt, &[u8]); 5] =
+            [(SaveFmt::Jpg, b"\xFF\xD8\xFF"), (SaveFmt::Png, b"\x89PNG"), (SaveFmt::Tiff, b"II"), (SaveFmt::Bmp, b"BM"), (SaveFmt::Webp, b"RIFF")];
+        for (fmt, magic) in cases {
+            let bytes = encode(&img, fmt, 80.0).unwrap_or_else(|e| panic!("{fmt:?}: {e}"));
+            assert!(bytes.starts_with(magic), "{fmt:?} magic bytes");
+            let back = image::load_from_memory(&bytes).unwrap_or_else(|e| panic!("{fmt:?} decodes: {e}"));
+            assert_eq!((back.width(), back.height()), (16, 12), "{fmt:?} size");
+        }
+        let avif = encode(&img, SaveFmt::Avif, 60.0).expect("avif");
+        assert_eq!(&avif[4..8], b"ftyp");
+        let palette = png_palette_bytes(&img, 75.0).expect("palette png");
+        assert_eq!(image::load_from_memory(&palette).unwrap().width(), 16);
+        assert!(encode(&img, SaveFmt::Heic, 80.0).is_err(), "HEIC goes through save_as");
+    }
+}

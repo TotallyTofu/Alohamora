@@ -166,3 +166,18 @@ pub fn title(path: &Path) -> Result<Option<String>> {
     let doc = open(path)?;
     Ok(doc.metadata().get(PdfDocumentMetadataTagType::Title).map(|t| t.value().to_string()).filter(|t| !t.is_empty()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn font_names_tell_bold_and_italic() {
+        for bold in ["Arial-BoldMT", "Helvetica-Black", "Inter SemiBold", "Futura-Heavy", "Garamond-Demi"] {
+            assert!(is_bold(bold), "{bold}");
+        }
+        assert!(!is_bold("Times-Roman"));
+        assert!(is_italic("Arial-ItalicMT") && is_italic("Helvetica-Oblique"));
+        assert!(!is_italic("Courier"));
+    }
+}

@@ -1,0 +1,25 @@
+{
+  "_about": "Golden cases for src/shared/text.ts and crates/core/src/text.rs. decodeText takes the bytes as an array of numbers.",
+  "decodeText": [
+    { "args": [[239, 187, 191, 72, 105]], "out": "Hi" },
+    { "args": [[255, 254, 65, 0]], "out": "A" },
+    { "args": [[254, 255, 0, 66]], "out": "B" },
+    { "args": [[84, 105, 225, 186, 191, 110, 103]], "out": "Tiếng" },
+    { "args": [[102, 255, 111]], "out": "f�o" },
+    { "args": [[255, 254, 65, 0, 66]], "out": "A�" },
+    { "args": [[]], "out": "" }
+  ],
+  "escapeXml": [
+    { "args": ["<a & \"b\">"], "out": "&lt;a &amp; &quot;b&quot;&gt;" },
+    { "args": ["it's"], "out": "it&apos;s" },
+    { "args": ["&amp;"], "out": "&amp;amp;" },
+    { "args": ["plain"], "out": "plain" }
+  ],
+  "guessLang": [
+    { "args": ["Xin chào thế giới"], "out": "vi" },
+    { "args": ["ĐẠI HỌC"], "out": "vi" },
+    { "args": ["Hello world"], "out": "en" },
+    { "args": ["café"], "out": "en" },
+    { "args": [""], "out": "en" }
+  ]
+}

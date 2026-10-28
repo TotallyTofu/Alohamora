@@ -155,3 +155,14 @@ pub fn probe(file: &Path) -> Result<ProbeResult> {
     cache.insert(key, result.clone());
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quiet_flags_come_first() {
+        let args: Vec<String> = ["-i", "in.mp4", "out.mp3"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(with_quiet(&args, "error"), ["-hide_banner", "-nostdin", "-loglevel", "error", "-i", "in.mp4", "out.mp3"]);
+    }
+}

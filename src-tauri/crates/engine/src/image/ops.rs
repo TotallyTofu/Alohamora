@@ -274,3 +274,75 @@ pub fn redact(img: &DynamicImage, regions: &[ImageRedactRegion]) -> RgbaImage {
     }
     base
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alohamora_core::edit_pipeline::build_edit_spec;
+    use alohamora_core::geometry::NormRect;
+    use alohamora_core::options::{default_edit, EditEffect, EditParams};
+
+    fn solid(w: u32, h: u32, c: [u8; 4]) -> DynamicImage {
+        DynamicImage::ImageRgba8(RgbaImage::from_pixel(w, h, Rgba(c)))
+    }
+
+    #[test]
+    fn colors() {
+        assert_eq!(parse_color("#fff"), [255, 255, 255, 255]);
+        assert_eq!(parse_color("#FF5A1F"), [255, 90, 31, 255]);
+        assert_eq!(parse_color(" #123 "), [17, 34, 51, 255]);
+        assert_eq!(parse_color("#00000080"), [0, 0, 0, 128]);
+        for bad in ["red", "#12", "#ggg", "", "#12345"] {
+            assert_eq!(parse_color(bad), [255, 255, 255, 255], "{bad:?} falls back to white");
+        }
+    }
+
+    #[test]
+    fn edits() {
+        let src = DynamicImage::ImageRgb8(image::RgbImage::from_fn(4, 4, |x, y| image::Rgb([x as u8 * 60, y as u8 * 60, 100])));
+        let none = apply_edit(&src, &build_edit_spec(&default_edit()));
+        assert_eq!(none.as_bytes(), src.as_bytes(), "the default sliders change nothing");
+        assert!(!none.color().has_alpha(), "no alpha channel is added");
+
+        let neg = apply_edit(&src, &build_edit_spec(&EditParams { effect: EditEffect::Invert, ..default_edit() })).to_rgb8();
+        assert_eq!(neg.get_pixel(1, 2).0, [255 - 60, 255 - 120, 155]);
+
+        let bw = apply_edit(&src, &build_edit_spec(&EditParams { effect: EditEffect::Bw, ..default_edit() })).to_rgb8();
+        assert!(bw.pixels().all(|p| p[0] == p[1] && p[1] == p[2]));
+
+        let bright = apply_edit(&src, &build_edit_spec(&EditParams { brightness: 100.0, ..default_edit() })).to_rgb8();
+        assert!(bright.pixels().zip(src.to_rgb8().pixels()).all(|(a, b)| a[2] >= b[2]));
+    }
+
+    #[test]
+    fn redaction_covers_only_the_region() {
+        let img = solid(10, 10, [255, 255, 255, 255]);
+        let out = redact(&img, &[ImageRedactRegion { rect: NormRect { x: 0.0, y: 0.0, w: 0.5, h: 1.0 }, style: RedactStyle::Black }]);
+        assert_eq!(out.dimensions(), (10, 10));
+        assert_eq!(out.get_pixel(0, 0).0, [0, 0, 0, 255]);
+        assert_eq!(out.get_pixel(4, 9).0, [0, 0, 0, 255]);
+        assert_eq!(out.get_pixel(5, 0).0, [255, 255, 255, 255]);
+        for style in [RedactStyle::Blur, RedactStyle::Pixelate] {
+            let out = redact(&img, &[ImageRedactRegion { rect: NormRect { x: 0.9, y: 0.9, w: 0.5, h: 0.5 }, style }]);
+            assert_eq!(out.dimensions(), (10, 10), "regions past the edge are clamped");
+        }
+    }
+
+    #[test]
+    fn resizing_and_masks() {
+        let wide = solid(100, 50, [255, 0, 0, 255]);
+        let contain = resize_contain(&wide, 40, 40, [0, 0, 255, 255]);
+        assert_eq!(contain.dimensions(), (40, 40));
+        assert_eq!(contain.get_pixel(0, 0).0, [0, 0, 255, 255], "padding uses the background");
+        assert_eq!(contain.get_pixel(20, 20).0, [255, 0, 0, 255]);
+        assert_eq!(resize_cover(&wide, 30, 30).dimensions(), (30, 30));
+
+        let mut tile = RgbaImage::from_pixel(2, 1, Rgba([9, 9, 9, 200]));
+        let mask = RgbaImage::from_fn(2, 1, |x, _| Rgba([255, 255, 255, if x == 0 { 255 } else { 0 }]));
+        mask_alpha(&mut tile, &mask);
+        assert_eq!((tile.get_pixel(0, 0)[3], tile.get_pixel(1, 0)[3]), (200, 0));
+
+        assert_eq!((ratio("16:9"), ratio("auto")), (Some(16.0 / 9.0), None));
+        assert_eq!((js_round_u32(2.5), js_round_u32(-3.0)), (3, 0));
+    }
+}

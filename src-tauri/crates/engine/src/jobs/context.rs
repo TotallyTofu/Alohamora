@@ -214,3 +214,106 @@ impl JobContext {
         remove_dir_with_retries(&self.temp_dir);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::paths::p2s;
+    use crate::test_util::{init_paths, TempDir};
+    use alohamora_core::registry::default_settings;
+
+    fn ctx(settings: Settings) -> JobContext {
+        init_paths();
+        let id = format!("test-{}", uuid::Uuid::new_v4());
+        JobContext::new(&id, CancelToken::new(), settings, crate::capabilities::get(), Box::new(|_, _| {})).expect("job context")
+    }
+
+    fn output(c: &JobContext, spec: OutputSpec, data: &[u8]) -> PathBuf {
+        let p = c.new_output(spec);
+        std::fs::write(&p, data).unwrap();
+        p
+    }
+
+    fn name(p: &str) -> String {
+        Path::new(p).file_name().unwrap().to_string_lossy().to_string()
+    }
+
+    #[test]
+    fn output_specs() {
+        let s = OutputSpec::new("/in/clip.mp4", ".JPG").suffix("frame").group("frames", 2, 30);
+        assert_eq!((s.ext.as_str(), s.suffix.as_str(), s.group.as_deref(), s.index, s.total), ("jpg", "frame", Some("frames"), 2, 30));
+    }
+
+    #[test]
+    fn outputs_go_next_to_the_input_and_never_overwrite() {
+        let dir = TempDir::new("finalize");
+        let input = dir.file("clip.mp4", b"input");
+        let existing = dir.file("clip-trimmed.mp4", b"older result");
+        let c = ctx(default_settings());
+        output(&c, OutputSpec::new(&p2s(&input), "mp4").suffix("trimmed"), b"new result");
+        let finals = c.finalize(&[p2s(&input)]).expect("finalize");
+        c.cleanup();
+        assert_eq!(finals.iter().map(|p| name(p)).collect::<Vec<_>>(), ["clip-trimmed (1).mp4"]);
+        assert_eq!(std::fs::read(&finals[0]).unwrap(), b"new result");
+        assert_eq!(std::fs::read(&existing).unwrap(), b"older result", "the earlier file is untouched");
+        assert_eq!(std::fs::read(&input).unwrap(), b"input");
+    }
+
+    #[test]
+    fn grouped_outputs_get_their_own_folder() {
+        let dir = TempDir::new("group");
+        let input = dir.file("report.pdf", b"%PDF");
+        std::fs::create_dir(dir.path().join("report-pages")).unwrap();
+        let c = ctx(default_settings());
+        for i in 1..=3 {
+            output(&c, OutputSpec::new(&p2s(&input), "png").group("pages", i, 3), &[i as u8]);
+        }
+        let finals = c.finalize(&[p2s(&input)]).expect("finalize");
+        c.cleanup();
+        let folder = dir.path().join("report-pages (1)");
+        let want: Vec<String> = ["report-001.png", "report-002.png", "report-003.png"].iter().map(|n| p2s(&folder.join(n))).collect();
+        assert_eq!(finals, want, "an existing folder is not reused");
+        assert_eq!(std::fs::read(&finals[2]).unwrap(), [3]);
+    }
+
+    #[test]
+    fn custom_folder_dropped_and_missing_outputs() {
+        let dir = TempDir::new("custom");
+        let out_dir = TempDir::new("custom-out");
+        let input = dir.file("a.png", b"png");
+        let mut settings = default_settings();
+        settings.output_mode = "custom-folder".into();
+        settings.custom_output_dir = Some(p2s(out_dir.path()));
+        let c = ctx(settings);
+        output(&c, OutputSpec::new(&p2s(&input), "webp"), b"kept");
+        let dropped = output(&c, OutputSpec::new(&p2s(&input), "jpg"), b"bigger than the original");
+        c.drop_output(&dropped);
+        let finals = c.finalize(&[p2s(&input)]).expect("finalize");
+        c.cleanup();
+        assert_eq!(finals, [p2s(&out_dir.path().join("a.webp"))]);
+        assert!(!out_dir.path().join("a.jpg").exists());
+        assert!(!c.temp_dir.exists(), "cleanup removes the job folder");
+
+        let c = ctx(default_settings());
+        c.new_output(OutputSpec::new(&p2s(&input), "gif"));
+        let err = c.finalize(&[p2s(&input)]).expect_err("a missing output is an error");
+        c.cleanup();
+        assert_eq!(err.to_string(), "Expected output was not created (out-0.gif)");
+    }
+
+    #[test]
+    fn progress_is_spread_over_subtasks() {
+        init_paths();
+        let seen = std::sync::Arc::new(Mutex::new(Vec::new()));
+        let sink = seen.clone();
+        let c = JobContext::new(&format!("test-{}", uuid::Uuid::new_v4()), CancelToken::new(), default_settings(), crate::capabilities::get(), Box::new(move |p, _| sink.lock().unwrap().push(p)))
+            .expect("job context");
+        c.set_subtask(1, 4, None);
+        c.progress(0.5, None);
+        c.progress(7.0, None);
+        c.cleanup();
+        assert_eq!(*seen.lock().unwrap(), [0.25, 0.375, 0.5]);
+        c.cancel.cancel();
+        assert!(c.check_cancel().unwrap_err().is_canceled());
+    }
+}

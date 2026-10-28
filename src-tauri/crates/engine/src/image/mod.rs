@@ -133,3 +133,37 @@ pub fn compress_to_bytes(file: &FileInfo, o: &ImageCompressOptions) -> Result<(V
     let bytes = if o.strip_metadata { bytes } else { exif::attach(bytes, fmt, &exif::read_source_meta(path))? };
     Ok((bytes, fmt))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fit_inside_never_enlarges_unless_asked() {
+        let fitted = fit_inside(DynamicImage::new_rgb8(400, 200), 100, 100, false);
+        assert_eq!((fitted.width(), fitted.height()), (100, 50));
+        let small = fit_inside(DynamicImage::new_rgb8(50, 20), 100, 100, false);
+        assert_eq!((small.width(), small.height()), (50, 20));
+        let big = fit_inside(DynamicImage::new_rgb8(50, 20), 100, 100, true);
+        assert_eq!((big.width(), big.height()), (100, 40));
+    }
+
+    #[test]
+    fn rotated_orientations_swap_width_and_height() {
+        assert!(swaps_sides(Orientation::Rotate90));
+        assert!(swaps_sides(Orientation::Rotate270FlipH));
+        assert!(!swaps_sides(Orientation::Rotate180));
+        assert!(!swaps_sides(Orientation::NoTransforms));
+    }
+
+    #[test]
+    fn compress_output_format() {
+        let opts = |format| ImageCompressOptions { quality: 75.0, max_side: 0.0, format, strip_metadata: true };
+        let f = |fmt| FileInfo { fmt: Some(fmt), ..Default::default() };
+        assert_eq!(compress_fmt(&f(Fmt::Png), &opts(ImageCompressFormat::Keep)), SaveFmt::Png);
+        assert_eq!(compress_fmt(&f(Fmt::Avif), &opts(ImageCompressFormat::Keep)), SaveFmt::Avif);
+        assert_eq!(compress_fmt(&f(Fmt::Tiff), &opts(ImageCompressFormat::Keep)), SaveFmt::Jpg);
+        assert_eq!(compress_fmt(&f(Fmt::Heic), &opts(ImageCompressFormat::Keep)), SaveFmt::Jpg);
+        assert_eq!(compress_fmt(&f(Fmt::Png), &opts(ImageCompressFormat::Webp)), SaveFmt::Webp);
+    }
+}
